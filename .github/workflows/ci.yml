@@ -1,0 +1,87 @@
+name: ci
+on:
+  push:
+    branches: ['**']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 6 * * *'
+permissions:
+  contents: read
+jobs:
+  host:
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y avahi-daemon libavahi-client3 dbus
+          sudo systemctl start avahi-daemon
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-NetFirewallRule -DisplayName DayZeroconfMDNS -Direction Inbound -Protocol UDP -LocalPort 5353 -Action Allow
+          New-NetFirewallRule -DisplayName DayZeroconfTCP -Direction Inbound -Protocol TCP -Action Allow
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - name: Native advertisement, discovery, connection, withdrawal and cancellation
+        run: cargo test --test native -- --ignored --test-threads=1
+      - name: Legacy-unicast enumeration query
+        run: cargo test --lib enumerate::tests::native_legacy_query -- --ignored
+      - run: cargo fmt --all -- --check
+        working-directory: demo
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: demo
+      - run: cargo test
+        working-directory: demo
+  cross-check:
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, target: aarch64-apple-ios-sim }
+          - { os: ubuntu-latest, target: aarch64-linux-android }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-ohos }
+          - { os: ubuntu-latest, target: wasm32-unknown-unknown }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+          components: clippy
+      - run: cargo clippy --target ${{ matrix.target }} -- -D warnings
+  demo:
+    uses: daybrite/actions/.github/workflows/dayapp.yml@v1
+    permissions:
+      contents: write # Shared workflow uses this only for release assets on a tag.
+    secrets: inherit
+    with:
+      project-path: demo
+      targets: macos-appkit, linux-gtk, linux-qt, windows-winui, ios-uikit, android-mdc, harmony-arkui
+      update-day-deps: true
+      scripts: dayscript/demo.yaml
+      target-scripts: |
+        macos-appkit, linux-gtk, linux-qt, windows-winui, android-mdc: dayscript/demo.yaml dayscript/enumeration.yaml
+      preflight-checks: fmt, clippy, test
+      target-packages: |
+        linux-gtk, linux-qt: avahi-daemon libavahi-client3 dbus
+      target-setup: |
+        linux-gtk, linux-qt: sudo systemctl start avahi-daemon
+        windows-winui: powershell -NoProfile -Command "New-NetFirewallRule -DisplayName DayZeroconfMDNS -Direction Inbound -Protocol UDP -LocalPort 5353 -Action Allow; New-NetFirewallRule -DisplayName DayZeroconfTCP -Direction Inbound -Protocol TCP -Action Allow"
+      ios-devices: |
+        device=iPhone, orientation=portrait
+      android-devices: |
+        device=pixel_7, os=36, orientation=portrait

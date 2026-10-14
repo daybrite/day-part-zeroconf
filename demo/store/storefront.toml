@@ -1,0 +1,13 @@
+# Localized listing metadata for demo packages. Nothing is uploaded by local builds.
+[storefront.metadata]
+name = "Zeroconf Explorer"
+subtitle = "Explore local network services"
+short = "Browse, inspect, publish, and connect to DNS-SD services on your local network."
+description = """
+Explore your local network with native service discovery. Search by service name, type, or host;
+inspect addresses and TXT attributes; publish an existing endpoint or a built-in HTTP test server;
+and test TCP or HTTP connections. Designed as a practical workbench for developers and curious
+network users. Available discovery features depend on the platform and network permissions.
+"""
+keywords = ["bonjour", "mdns", "dns-sd", "network", "discovery", "developer"]
+release-notes = "Initial service browser, inspector, publisher, and connection tools."

@@ -1,0 +1,41 @@
+[package]
+name = "day-part-zeroconf"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Native DNS-SD discovery and advertisement for Day apps"
+repository = "https://github.com/daybrite/day-part-zeroconf"
+license = "MPL-2.0"
+publish = false
+
+[package.metadata.day]
+compat = "0.5"
+
+[target.'cfg(any(target_os = "android", target_env = "ohos"))'.dependencies]
+day-bridge = { git = "https://github.com/daybrite/day.git" }
+
+[target.'cfg(target_os = "android")'.dependencies]
+day-android = { git = "https://github.com/daybrite/day.git" }
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+libc = "0.2"
+
+[target.'cfg(all(target_os = "linux", not(target_env = "ohos")))'.dependencies]
+libloading = "0.8"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_NetworkManagement_Dns", "Win32_Foundation", "Win32_System_SystemInformation"] }
+
+[build-dependencies]
+day-build = { git = "https://github.com/daybrite/day.git" }
+
+[package.metadata.day.android]
+permissions = ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.CHANGE_WIFI_MULTICAST_STATE"]
+
+# Day's Harmony host already declares ohos.permission.INTERNET, the mDNS API's
+# sole permission. Repeating it in a part creates a duplicate manifest entry.
+
+[package.metadata.day.flatpak]
+finish-args = ["--system-talk-name=org.freedesktop.Avahi"]
+
+[workspace]

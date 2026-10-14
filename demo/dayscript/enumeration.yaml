@@ -1,0 +1,17 @@
+# Native service-type enumeration, separate from the portable targeted workflow.
+# Physical iOS requires Apple's multicast entitlement; do not silently test a preset list.
+name: enumeration
+flow:
+  - navigate: { route: publish }
+  - input: { id: publish-name, text: "Day enumeration fixture" }
+  - tap: { id: publish-start }
+  - wait_for: { id: advertisement-active, timeout_secs: 30 }
+  - navigate: { route: browse }
+  - input: { id: browse-type, text: "" }
+  - input: { id: service-search, text: "Day enumeration fixture" }
+  - tap: { id: browse-start }
+  - wait_for: { id: services-found, timeout_secs: 30 }
+  - screenshot: enumeration
+  - tap: { id: browse-stop }
+  - navigate: { route: publish }
+  - tap: { id: publish-stop }
