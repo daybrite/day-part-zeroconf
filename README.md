@@ -67,7 +67,7 @@ application. TXT `path` data cannot inject headers or redirect the probe to anot
 | --- | --- | --- |
 | macOS, iOS | Bonjour `DNSServiceBrowse`, `Resolve`, `GetAddrInfo`, `Register` in libSystem | Binary TXT; native interface indices; iOS all-types entitlement |
 | Linux (GTK, Qt) | Avahi client/simple-poll/entry-group APIs | Dynamically loads `libavahi-client.so.3` and `libavahi-common.so.3`; requires the Avahi daemon/system D-Bus |
-| Windows 10+ (WinUI, XAML, GTK, Qt) | `DnsServiceBrowse`, `Resolve`, `Register`, `DeRegister` in dnsapi.dll | No Bonjour install; UTF-8 key=value publication only, no embedded NUL; one IPv4 and IPv6 address exposed by this API |
+| Windows 10+ (WinUI, XAML, GTK, Qt) | `DnsServiceBrowse`, `Resolve`, `Register`, `DeRegister` in dnsapi.dll | No Bonjour install; UTF-8 key=value publication only, no embedded NUL; one IPv4 and IPv6 address exposed by this API; native registrations may omit type-enumeration records |
 | Android | `NsdManager`; continuous service-info callbacks on API 34+, serialized legacy resolution earlier | UTF-8 TXT publication via the public string API; binary values preserved on receive; OS chooses network; hostname available on API 36+ |
 | HarmonyOS / OpenHarmony | `@kit.NetworkKit` mDNS service through Daybridge | Binary attribute values; rejects key-only publication; OS chooses interface and returns one address |
 | Web DOM / other targets | Explicit `Unsupported` | Browsers expose no general LAN DNS-SD API |
@@ -120,8 +120,13 @@ day launch -t macos-appkit --script dayscript/demo.yaml
 
 `dayscript/demo.yaml` exercises real publish → browse → resolve → TCP → HTTP → withdraw.
 `dayscript/enumeration.yaml` additionally exercises type enumeration; physical iOS needs the
-entitlement and is excluded from its default CI run. HarmonyOS runs the targeted workflow:
-its responder does not announce its own type through meta-enumeration. The shared query path
+entitlement and is excluded from its default CI run. HarmonyOS and Windows run the targeted
+workflow: their native responders do not reliably announce their own type through
+meta-enumeration. This is a responder limitation, not a restriction on browsing other peers.
+Windows enumeration requires a peer that announces types (see
+[Microsoft's issue](https://github.com/microsoft/WindowsAppSDK/issues/2543)); the self-published
+enumeration integration test is therefore not compiled on Windows. Targeted discovery,
+connection, withdrawal and a separate cancellation test remain required there. The shared query path
 is covered by packet tests, the native responder test, and Android’s enumeration workflow. OS permission dialogs and cross-device
 network isolation still need manual checks. HarmonyOS emulator testing belongs in CI, not on
 this ARM Mac.
@@ -132,11 +137,35 @@ It starts Avahi on Linux and configures firewall rules on disposable Windows run
 framework is tracked by its canonical Git URL, like `day-part-speech`; generated local patches
 and Cargo locks are ignored. CI tracks Day's current main and runs daily as well as on changes.
 
-Local validation on 2026-10-14: 13 core unit tests, two demo unit tests, and three opt-in native
-tests passed. Demo walkthroughs passed on macOS (47 steps), the iOS simulator (35), and Android
-(48). The HarmonyOS Rust/ArkTS app built and packaged successfully. Rust/Clippy checks passed
-for Windows, Linux, iOS, Android, HarmonyOS and the unsupported web backend. Windows/Linux
-native execution and HarmonyOS emulator execution remain for CI; the workflow has not yet run.
+Every host tests the fallback query's real UDP send/receive loop over loopback, including
+malformed packets, response IDs, duplicate responses and cancellation. The opt-in multicast
+responder test runs on Linux in CI; on macOS it remains a manual check because the hosted VM
+timed out waiting for a multicast reply despite successful native Bonjour tests. Android's
+demo continues to test all-types discovery over multicast.
+
+`DAY_ZEROCONF_TRACE=1` enables worker-side diagnostics (operation stages, discovered identities,
+resolution counts and Windows PTR callbacks). It does not log TXT values. Native callbacks
+enqueue diagnostics through a bounded nonblocking channel; they do not write to stderr.
+CI enables this and includes the current test stage in native timeout messages.
+
+For macOS CI, `ci/demo-setup.sh` runs a bounded helper that accepts only this demo's local-network
+permission alert and captures the desktop on failure, since window screenshots cannot show
+system dialogs. It runs only on GitHub Actions and does not edit TCC databases. The macOS
+permission description is checked into the native plist using the same Fluent-derived text
+as iOS; the current Day CLI does not materialize `[permissions.raw].macos` there automatically.
+
+Initial validation on 2026-10-14 included the iOS simulator walkthrough (35 steps), Android
+(48), HarmonyOS Rust/ArkTS compilation and packaging, and Rust/Clippy checks for all backends.
+The first CI run subsequently passed the Linux GTK/Qt, iOS, Android and HarmonyOS demo jobs.
+
+Follow-up to [run 38591271154](https://github.com/daybrite/day-part-zeroconf/actions/runs/38591271154):
+the Avahi cache-progress notification was incorrectly reported as failure. Reproduced in a
+Linux VM and fixed; all three native Linux tests and the multicast query test now pass locally.
+The updated crate has 15 passing unit tests on Linux and macOS; the macOS demo passes 47 steps.
+Windows uses the documented API name form without a terminal root dot and handles returned
+DNS suffixes case-insensitively. These Windows changes are cross-checked, but their effect on
+the reported discovery timeout needs a Windows run. The macOS CI permission helper also needs
+confirmation on a fresh hosted runner. No new remote run has been performed for these edits.
 
 Two Day Android UI integration issues remain visible in the current framework checkout:
 navigation SVGs appear as circular placeholders, and a busy enumeration can produce a

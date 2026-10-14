@@ -131,6 +131,13 @@ impl Drop for Handle {
 }
 pub(crate) fn start(sink: Sink) -> Result<Box<dyn Native>> {
     let socket = UdpSocket::bind(("0.0.0.0", 0)).map_err(io_error)?;
+    start_query(socket, "224.0.0.251:5353".parse().unwrap(), sink)
+}
+fn start_query(
+    socket: UdpSocket,
+    destination: std::net::SocketAddr,
+    sink: Sink,
+) -> Result<Box<dyn Native>> {
     socket
         .set_read_timeout(Some(Duration::from_millis(200)))
         .map_err(io_error)?;
@@ -147,7 +154,7 @@ pub(crate) fn start(sink: Sink) -> Result<Box<dyn Native>> {
             let mut bytes = [0; 9000];
             while !cancelled.load(Ordering::Acquire) {
                 if Instant::now() >= next {
-                    if let Err(e) = socket.send_to(&packet, ("224.0.0.251", 5353)) {
+                    if let Err(e) = socket.send_to(&packet, destination) {
                         emit(&sink, Event::Error(io_error(e)));
                         break;
                     }
@@ -155,7 +162,7 @@ pub(crate) fn start(sink: Sink) -> Result<Box<dyn Native>> {
                 }
                 match socket.recv_from(&mut bytes) {
                     Ok((n, source)) => {
-                        if source.port() != 5353 {
+                        if source.port() != destination.port() {
                             continue;
                         }
                         if let Some(types) = types(&bytes[..n], id) {
@@ -229,6 +236,47 @@ mod tests {
         assert_eq!(types(&b, 123), Some(vec![]))
     }
     #[test]
+    fn unicast_transport_filters_packets_deduplicates_and_cancels() {
+        // An actual loopback UDP exchange. Hosted VMs need not route multicast back
+        // to themselves for us to test the mobile query/receive/cancellation path.
+        let responder = UdpSocket::bind("127.0.0.1:0").unwrap();
+        responder
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        let destination = responder.local_addr().unwrap();
+        let (sender, rx) = mpsc::sync_channel(64);
+        let handle = start_query(
+            UdpSocket::bind("127.0.0.1:0").unwrap(),
+            destination,
+            Sink {
+                sender,
+                generation: 0,
+                overflow: Arc::new(AtomicBool::new(false)),
+            },
+        )
+        .unwrap();
+        let mut bytes = [0; 1024];
+        let (len, client) = responder.recv_from(&mut bytes).unwrap();
+        assert_eq!(&bytes[len - 2..len], &[0x80, 1]); // QU + IN
+        let mut answer = response();
+        answer[..2].copy_from_slice(&bytes[..2]);
+        responder
+            .send_to(&answer[..answer.len() - 1], client)
+            .unwrap(); // malformed
+        responder.send_to(&answer, client).unwrap();
+        // Android responders return ID zero; this is the same observation.
+        answer[..2].fill(0);
+        responder.send_to(&answer, client).unwrap();
+        assert_eq!(
+            rx.recv_timeout(Duration::from_secs(2)).unwrap().1,
+            Event::ServiceType("_http._tcp".into())
+        );
+        assert!(rx.recv_timeout(Duration::from_millis(300)).is_err());
+        let before = Instant::now();
+        drop(handle);
+        assert!(before.elapsed() < Duration::from_secs(2));
+    }
+    #[test]
     #[ignore = "requires a native mDNS responder and local network access"]
     fn native_legacy_query() {
         let mut publisher = advertise(Advertisement {
@@ -241,12 +289,14 @@ mod tests {
         .unwrap();
         let until = Instant::now() + Duration::from_secs(30);
         loop {
-            assert!(Instant::now() < until);
-            if matches!(
-                publisher.recv_timeout(Duration::from_millis(100)),
-                Some(Event::Registered(_))
-            ) {
-                break;
+            assert!(
+                Instant::now() < until,
+                "native responder registration timed out"
+            );
+            match publisher.recv_timeout(Duration::from_millis(100)) {
+                Some(Event::Registered(_)) => break,
+                Some(Event::Error(e)) => panic!("native responder registration: {e}"),
+                _ => {}
             }
         }
         let (sender, rx) = mpsc::sync_channel(64);
@@ -257,11 +307,14 @@ mod tests {
         })
         .unwrap();
         loop {
-            assert!(Instant::now() < until);
-            if let Ok((_, Event::ServiceType(t))) = rx.recv_timeout(Duration::from_millis(100))
-                && t == "_dayzc-query._tcp"
-            {
-                break;
+            assert!(
+                Instant::now() < until,
+                "no multicast reply for _dayzc-query._tcp; check the runner's multicast route and local-network permission"
+            );
+            match rx.recv_timeout(Duration::from_millis(100)) {
+                Ok((_, Event::ServiceType(t))) if t == "_dayzc-query._tcp" => break,
+                Ok((_, Event::Error(e))) => panic!("multicast enumeration query: {e}"),
+                _ => {}
             }
         }
         publisher.stop();

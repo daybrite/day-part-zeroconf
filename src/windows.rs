@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 //! Windows 10+ DNS-SD, using dnsapi.dll (no Bonjour installation).
 use super::*;
+use crate::windows_names::{escape, instance};
 use std::{
     ffi::c_void,
     net::{Ipv4Addr, Ipv6Addr, SocketAddrV6},
@@ -21,7 +22,7 @@ fn hostname() -> Result<Vec<u16>> {
         return Err(Error::Unavailable("GetComputerNameExW".into()));
     }
     text.truncate(len as usize);
-    text.extend(".local.".encode_utf16());
+    text.extend(".local".encode_utf16());
     text.push(0);
     Ok(text)
 }
@@ -40,29 +41,6 @@ unsafe fn string(p: *const u16) -> String {
         String::from_utf16_lossy(std::slice::from_raw_parts(p, n))
     }
 }
-fn escape(s: &str) -> String {
-    s.replace('\\', "\\092").replace('.', "\\046")
-}
-fn unescape(s: &str) -> String {
-    let b = s.as_bytes();
-    let mut out = Vec::new();
-    let mut i = 0;
-    while i < b.len() {
-        if b[i] == b'\\' && i + 3 < b.len() && b[i + 1..i + 4].iter().all(u8::is_ascii_digit) {
-            let n = (b[i + 1] - b'0') as u16 * 100
-                + (b[i + 2] - b'0') as u16 * 10
-                + (b[i + 3] - b'0') as u16;
-            if n <= 255 {
-                out.push(n as u8);
-                i += 4;
-                continue;
-            }
-        }
-        out.push(b[i]);
-        i += 1
-    }
-    String::from_utf8_lossy(&out).into_owned()
-}
 fn error(code: u32) -> Error {
     if code == 5 {
         Error::PermissionDenied
@@ -79,6 +57,7 @@ struct Context {
     done: AtomicBool,
     status: AtomicU32,
     registering: AtomicBool,
+    diagnostics: Option<mpsc::SyncSender<String>>,
 }
 unsafe extern "system" fn browse_callback(
     status: u32,
@@ -87,6 +66,9 @@ unsafe extern "system" fn browse_callback(
 ) {
     unsafe {
         let c = &*data.cast::<Context>();
+        if let Some(tx) = &c.diagnostics {
+            let _ = tx.try_send(format!("Windows browse callback status={status}"));
+        }
         if status == 1223 || status == 995 {
             if !records.is_null() {
                 DnsFree(records.cast(), DnsFreeRecordList)
@@ -101,18 +83,21 @@ unsafe extern "system" fn browse_callback(
             while let Some(r) = p.as_ref() {
                 if r.wType == DNS_TYPE_PTR {
                     let target = string(r.Data.PTR.pNameHost);
+                    if let Some(tx) = &c.diagnostics {
+                        let _ =
+                            tx.try_send(format!("Windows PTR target={target:?} ttl={}", r.dwTtl));
+                    }
                     let target = target.trim_end_matches('.');
                     if kind == ENUMERATION_TYPE {
                         if r.dwTtl > 0
-                            && let Ok(t) = validate_type(target)
+                            && let Ok(t) = validate_type(&target.to_ascii_lowercase())
                         {
                             emit(&c.sink, Event::ServiceType(t));
                         }
                     } else {
-                        let suffix = format!(".{kind}.local");
-                        if let Some(name) = target.strip_suffix(&suffix) {
+                        if let Some(name) = instance(target, kind) {
                             let id = ServiceId {
-                                name: unescape(name),
+                                name,
                                 service_type: kind.clone(),
                                 domain: "local.".into(),
                                 interface: *interface,
@@ -142,13 +127,8 @@ unsafe fn service(c: &Context, s: &DNS_SERVICE_INSTANCE) -> Service {
             Request::Resolve(id) => id.clone(),
             Request::Advertise(a) => {
                 let full = string(s.pszInstanceName);
-                let suffix = format!(".{}.local", a.service_type);
                 ServiceId {
-                    name: unescape(
-                        full.trim_end_matches('.')
-                            .strip_suffix(&suffix)
-                            .unwrap_or(&a.name),
-                    ),
+                    name: instance(&full, &a.service_type).unwrap_or_else(|| a.name.clone()),
                     service_type: a.service_type.clone(),
                     domain: "local.".into(),
                     interface: a.interface,
@@ -276,18 +256,21 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
         .spawn(move || unsafe {
             // Context, request, query, cancel handle and instance stay alive through the final callback.
             // In particular, DnsServiceBrowseCancel is asynchronous; its return is not a lifetime fence.
+            let (diagnostics, diagnostic_rx) = mpsc::sync_channel(32);
             let mut c = Box::new(Context {
                 sink,
                 request,
                 done: AtomicBool::new(false),
                 status: AtomicU32::new(PENDING),
                 registering: AtomicBool::new(true),
+                diagnostics: trace_enabled().then_some(diagnostics),
             });
             let data = (&mut *c as *mut Context).cast();
             let mut cancel = DNS_SERVICE_CANCEL::default();
             match &c.request {
                 Request::Browse(kind, interface) => {
-                    let query = wide(&format!("{kind}.local."));
+                    // Follow the Windows API's documented query form (no terminal root dot).
+                    let query = wide(&format!("{kind}.local"));
                     let req = DNS_SERVICE_BROWSE_REQUEST {
                         Version: 1,
                         InterfaceIndex: *interface,
@@ -303,6 +286,9 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         return;
                     }
                     while !stopping.load(Ordering::Acquire) {
+                        for message in diagnostic_rx.try_iter() {
+                            trace(message);
+                        }
                         thread::sleep(Duration::from_millis(30));
                     }
                     let code = DnsServiceBrowseCancel(&cancel);
@@ -318,7 +304,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         "{}.{}.{}",
                         escape(&id.name),
                         id.service_type,
-                        id.domain
+                        id.domain.trim_end_matches('.')
                     ));
                     let req = DNS_SERVICE_RESOLVE_REQUEST {
                         Version: 1,
@@ -342,7 +328,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                     }
                 }
                 Request::Advertise(a) => {
-                    let name = wide(&format!("{}.{}.local.", escape(&a.name), a.service_type));
+                    let name = wide(&format!("{}.{}.local", escape(&a.name), a.service_type));
                     let host = match hostname() {
                         Ok(host) => host,
                         Err(e) => {

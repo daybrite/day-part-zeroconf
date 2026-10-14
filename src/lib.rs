@@ -45,6 +45,18 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+pub(crate) fn trace_enabled() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var("DAY_ZEROCONF_TRACE").is_ok_and(|v| v == "1"))
+}
+// Called by workers, never from a native callback. Ignore stderr write failures.
+pub(crate) fn trace(message: impl fmt::Display) {
+    if trace_enabled() {
+        use std::io::Write;
+        let _ = writeln!(std::io::stderr().lock(), "zeroconf: {message}");
+    }
+}
+
 /// A service observation belongs to an interface. Names are never persistent device IDs.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ServiceId {
@@ -308,7 +320,7 @@ impl Future for Next<'_> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum Request {
     Browse(String, u32),
     Resolve(ServiceId),
@@ -385,6 +397,13 @@ fn start(request: Request) -> Result<Operation> {
     let worker = thread::Builder::new()
         .name("zeroconf".into())
         .spawn(move || {
+            match &request {
+                Request::Advertise(a) => trace(format_args!(
+                    "advertise {:?} {} port={} interface={}",
+                    a.name, a.service_type, a.port, a.interface
+                )),
+                _ => trace(format_args!("starting {request:?}")),
+            }
             let (sender, rx) = mpsc::sync_channel(MAX_SERVICES);
             let overflow = Arc::new(AtomicBool::new(false));
             let tx = Sink {
@@ -425,6 +444,13 @@ fn start(request: Request) -> Result<Operation> {
                     Err(mpsc::RecvTimeoutError::Timeout) => continue,
                     Err(_) => break,
                 };
+                match &event {
+                    Event::Resolved(s) => trace(format_args!(
+                        "generation {generation}: resolved {:?}, port={}, address_count={}, txt_count={}",
+                        s.id, s.port, s.addresses.len(), s.txt.0.len()
+                    )),
+                    _ => trace(format_args!("generation {generation}: {event:?}")),
+                }
                 // Ignore callbacks queued by a resolver that has already been removed.
                 if browsing && generation != 0 && !resolves.values().any(|(_, g)| *g == generation)
                 {
@@ -498,6 +524,8 @@ mod backend;
 #[cfg(any(target_os = "android", target_env = "ohos"))]
 #[path = "mobile.rs"]
 mod backend;
+#[cfg(any(test, target_os = "windows"))]
+mod windows_names;
 #[cfg(not(any(
     target_os = "macos",
     target_os = "ios",

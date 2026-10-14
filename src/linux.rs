@@ -5,6 +5,11 @@ use super::*;
 use std::ffi::{CStr, CString, c_char, c_void};
 use std::ptr;
 type P = *mut c_void;
+// AvahiBrowserEvent from avahi-common/defs.h. CACHE_EXHAUSTED (2) and
+// ALL_FOR_NOW (3) are successful progress notifications, not failures.
+const BROWSER_NEW: i32 = 0;
+const BROWSER_REMOVE: i32 = 1;
+const BROWSER_FAILURE: i32 = 4;
 type ClientCb = unsafe extern "C" fn(P, i32, P);
 type BrowseCb =
     unsafe extern "C" fn(P, i32, i32, i32, *const c_char, *const c_char, *const c_char, u32, P);
@@ -97,9 +102,9 @@ unsafe extern "C" fn types_cb(
     data: P,
 ) {
     let c = unsafe { &*data.cast::<Context>() };
-    if event == 0 {
+    if event == BROWSER_NEW {
         emit(&c.sink, Event::ServiceType(unsafe { s(kind) }))
-    } else if event == 2 {
+    } else if event == BROWSER_FAILURE {
         emit(&c.sink, Event::Error(failure(-1)))
     }
 }
@@ -115,11 +120,11 @@ unsafe extern "C" fn browse_cb(
     data: P,
 ) {
     let c = unsafe { &*data.cast::<Context>() };
-    if event == 2 {
+    if event == BROWSER_FAILURE {
         emit(&c.sink, Event::Error(failure(-1)));
         return;
     }
-    if event > 1 {
+    if !matches!(event, BROWSER_NEW | BROWSER_REMOVE) {
         return;
     }
     let id = ServiceId {
@@ -129,7 +134,7 @@ unsafe extern "C" fn browse_cb(
         interface: interface.max(0) as u32,
     };
     let mut seen = c.seen.borrow_mut();
-    if event == 0 {
+    if event == BROWSER_NEW {
         let set = seen.entry(id.clone()).or_default();
         let first = set.is_empty();
         set.insert(protocol);

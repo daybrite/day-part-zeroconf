@@ -37,5 +37,7 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Discover and connect to services on your local network, and publish a test service.</string>
 </dict>
 </plist>
