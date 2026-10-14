@@ -20,7 +20,11 @@ The Publish page advertises an existing listener when a port is supplied. Leave 
 to start the built-in HTTP test server, using a TCP service type. TXT entries accept `key=value`
 or a key-only line, subject to the platform's capabilities. Withdrawing closes the test server.
 Settings provides appearance and language preferences. Navigation uses columns on desktop and
-list/detail screens on phones.
+list/detail screens on phones. Service rows use consistent leading alignment and colored network
+badges. The inspector keeps connection actions near the top, with selectable monospace panels
+for addresses, TXT records, responses and activity. Long lines scroll horizontally; larger
+blocks also scroll vertically. Light and dark appearances use native surfaces around the
+high-contrast data panels.
 
 See the parent README for native dependencies, permissions, iOS entitlement requirements,
 mobile enumeration limits and the differences in TXT support. No app-store submission lanes
@@ -33,13 +37,15 @@ cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 day lint --strict
-day launch -t macos-appkit --script dayscript/demo.yaml --script dayscript/enumeration.yaml
+day launch -t macos-appkit --script dayscript/demo.yaml --script dayscript/enumeration.yaml --script dayscript/presentation.yaml
 ```
 
 `demo.yaml` performs real advertisement, targeted discovery, resolution, TCP and HTTP requests,
 and withdrawal. `enumeration.yaml` tests all-types discovery. The latter is excluded from the
 default iOS and HarmonyOS CI runs for the platform reasons documented in the parent README.
-Screenshots and generated native projects are under `build/`.
+`presentation.yaml` publishes long synthetic names and TXT values through the native stack,
+captures the browser/inspector and scrolls both axes of the data panel. CI runs it on every demo
+target. Screenshots and generated native projects are under `build/`.
 
 ## Code
 

@@ -167,10 +167,11 @@ DNS suffixes case-insensitively. These Windows changes are cross-checked, but th
 the reported discovery timeout needs a Windows run. The macOS CI permission helper also needs
 confirmation on a fresh hosted runner. No new remote run has been performed for these edits.
 
-Two Day Android UI integration issues remain visible in the current framework checkout:
-navigation SVGs appear as circular placeholders, and a busy enumeration can produce a
-nonfatal `RecyclerView` reload-during-layout exception in `DayBridge.listReload`. The discovery
-and connection walkthroughs pass despite these; the framework itself is not modified here.
+The demo UI refresh includes two companion fixes in the local Day framework checkout:
+Android stages icons for vector-only apps and resolves system monospace labels correctly.
+These Day changes must ship alongside the demo to obtain the same Android appearance in CI.
+A busy Android enumeration can still produce a nonfatal `RecyclerView` reload-during-layout
+exception in `DayBridge.listReload`; the discovery and connection walkthroughs pass despite it.
 
 ## Source study and design decisions
 

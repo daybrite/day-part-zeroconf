@@ -81,9 +81,9 @@ jobs:
       update-day-deps: true
       launch-env: DAY_ZEROCONF_TRACE=1
       script-setup: source ../ci/demo-setup.sh
-      scripts: dayscript/demo.yaml
+      scripts: dayscript/demo.yaml dayscript/presentation.yaml
       target-scripts: |
-        macos-appkit, linux-gtk, linux-qt, android-mdc: dayscript/demo.yaml dayscript/enumeration.yaml
+        macos-appkit, linux-gtk, linux-qt, android-mdc: dayscript/demo.yaml dayscript/enumeration.yaml dayscript/presentation.yaml
       preflight-checks: fmt, clippy, test
       target-packages: |
         linux-gtk, linux-qt: avahi-daemon libavahi-client3 dbus
