@@ -1,14 +1,13 @@
 // Copyright © The Daybrite Project
 // SPDX-License-Identifier: MPL-2.0
 use day::prelude::*;
+use day_piece_settings::prelude::*;
 mod model;
 mod network;
 mod pages;
 use model::Scene;
 day::day_start!(options: window(), root);
 day::resources!();
-const THEME_KEY: &str = "explorer.theme";
-const LOCALE_KEY: &str = "explorer.locale";
 day::routes! { pub(crate) enum Section { Browse=>"browse", Publish=>"publish", Settings=>"settings" } }
 pub fn window() -> day::WindowOptions {
     day::WindowOptions {
@@ -19,8 +18,15 @@ pub fn window() -> day::WindowOptions {
     }
 }
 pub fn root() -> impl Piece {
-    day_piece_settings::apply_startup(THEME_KEY, LOCALE_KEY);
-    Scene::scoped(|s| {
+    // Settings and About: appearance and language from Day's catalog, the app's name and
+    // version from Day.toml. On desktop this adds the app menu's Settings… and About items and
+    // their windows; on a phone it is the page behind the Settings section below.
+    // https://daybrite.dev/docs/settings/
+    let prefs = Preferences::new()
+        .about(About::from_manifest().link(day::tr("day-about-website"), "https://daybrite.dev"))
+        .group(general_group(res::locales::ALL))
+        .install();
+    Scene::scoped(move |s| {
         nav(s.section)
             .title(res::str::app_title())
             .content_list(pages::browser)
@@ -44,12 +50,16 @@ pub fn root() -> impl Piece {
                 res::vectors::publish,
                 pages::publisher,
             )
-            .item_icon(
-                Section::Settings,
-                res::str::nav_settings(),
-                res::vectors::tab_settings,
-                pages::settings::settings_page,
+            // Use the desktop's conventional Settings menu/window; without a menu bar,
+            // keep Settings reachable as a navigation section.
+            .items(
+                {
+                    let prefs = prefs.clone();
+                    move || prefs.nav_keys(Section::Settings)
+                },
+                |v: &Section| item(*v, res::str::nav_settings()).icon(res::vectors::tab_settings),
             )
+            .destination(move |_: &Section| prefs.page())
             .id("nav")
     })
 }

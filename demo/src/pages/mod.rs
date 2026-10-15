@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MPL-2.0
 mod browser;
 mod inspector;
-pub mod settings;
 mod style;
 use crate::{model::Scene, res};
 pub use browser::browser;
