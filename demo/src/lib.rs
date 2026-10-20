@@ -48,6 +48,6 @@ pub fn root() -> impl Piece {
                     .nav_item(Section::Settings)
                     .map(|i| i.icon(res::vectors::tab_settings)),
             ))
-            .id("nav")
+            .id(day::id!(nav))
     })
 }

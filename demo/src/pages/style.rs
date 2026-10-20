@@ -29,9 +29,10 @@ pub fn emblem(color: impl Fn() -> Color + 'static) -> impl Piece {
 /// The dark inset surface and its foreground are a pair, independent of system appearance.
 pub fn code_panel(
     text: impl Fn() -> String + 'static,
-    id: &'static str,
+    ids: (day::ElementId, day::ElementId, day::ElementId),
     height: Option<f64>,
 ) -> impl Piece {
+    let (panel, horizontal, vertical) = ids;
     let text = std::rc::Rc::new(text);
     let measure_text = text.clone();
     // Day's scroll viewport needs an explicit vertical extent. Rebuild only when the
@@ -54,13 +55,13 @@ pub fn code_panel(
                         .monospace()
                         .color(Color::hex(0xd8ecf5))
                         .selectable()
-                        .id(id)
+                        .id(panel.clone())
                         .padding(14.0),
                 )
                 .horizontal()
-                .id(format!("{id}-horizontal")),
+                .id(horizontal.clone()),
             )
-            .id(format!("{id}-vertical"))
+            .id(vertical.clone())
             .height(height.unwrap_or(lines as f64 * 20.0 + 28.0))
             .background(Color::hex(0x172536))
             .corner_radius(12.0)

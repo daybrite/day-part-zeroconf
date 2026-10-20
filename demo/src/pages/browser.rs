@@ -11,39 +11,39 @@ pub fn browser() -> impl Piece {
             label(res::str::browse())
                 .font(Font::Title2)
                 .bold()
-                .id("browser-title"),
+                .id(day::id!(browser_title)),
             label(res::str::browse_caption())
                 .font(Font::Footnote)
                 .secondary(),
             text_field(s.kind)
                 .placeholder(res::str::type_hint())
                 .a11y(|a| a.label(res::str::service_type()))
-                .id("browse-type"),
+                .id(day::id!(browse_type)),
             row((
                 button(res::str::start())
                     .action(move || s.browse())
-                    .id("browse-start")
+                    .id(day::id!(browse_start))
                     .grow_w(),
                 button(res::str::stop())
                     .action(move || s.stop_browse())
                     .enabled(move || s.browsing.get())
-                    .id("browse-stop"),
+                    .id(day::id!(browse_stop)),
             ))
             .spacing(8.0)
             .grow_w(),
             label(s.status)
                 .font(Font::Caption)
                 .secondary()
-                .id("browse-status"),
+                .id(day::id!(browse_status)),
             text_field(s.filter)
                 .placeholder(res::str::search_hint())
                 .a11y(|a| a.label(res::str::search()))
-                .id("service-search"),
+                .id(day::id!(service_search)),
             row((
                 label(move || res::str::service_count(s.rows().len().to_string()).format())
                     .font(Font::Footnote)
                     .bold()
-                    .id("service-count")
+                    .id(day::id!(service_count))
                     .grow_w(),
                 when(
                     move || !s.rows().is_empty(),
@@ -51,7 +51,7 @@ pub fn browser() -> impl Piece {
                         label(res::str::services_found())
                             .font(Font::Caption)
                             .secondary()
-                            .id("services-found")
+                            .id(day::id!(services_found))
                     },
                 ),
             ))
@@ -63,7 +63,7 @@ pub fn browser() -> impl Piece {
                     section((label(res::str::empty())
                         .font(Font::Callout)
                         .secondary()
-                        .id("services-empty"),))
+                        .id(day::id!(services_empty)),))
                 },
             ),
         ))
@@ -114,7 +114,7 @@ pub fn browser() -> impl Piece {
                 .collect()
         })
         .a11y(|a| a.label(res::str::services()))
-        .id("service-list")
+        .id(day::id!(service_list))
         .grow(),
     ))
     .align(HAlign::Leading)

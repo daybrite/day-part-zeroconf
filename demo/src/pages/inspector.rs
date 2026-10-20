@@ -11,7 +11,7 @@ pub fn inspector() -> impl Piece {
             label(res::str::inspector())
                 .font(Font::Footnote)
                 .secondary()
-                .id("inspector-title"),
+                .id(day::id!(inspector_title)),
             when(
                 move || s.selected.get().is_none(),
                 || {
@@ -55,7 +55,7 @@ pub fn inspector() -> impl Piece {
                         label(move || s.selected.get().map(|id| id.name).unwrap_or_default())
                             .font(Font::Title2)
                             .bold()
-                            .id("service-name"),
+                            .id(day::id!(service_name)),
                         label(move || {
                             s.selected
                                 .get()
@@ -73,7 +73,7 @@ pub fn inspector() -> impl Piece {
                         .selectable(),
                         when(
                             move || s.service().is_none(),
-                            || label(res::str::resolving()).id("service-resolving"),
+                            || label(res::str::resolving()).id(day::id!(service_resolving)),
                         ),
                         when(
                             move || s.service().is_some(),
@@ -94,7 +94,7 @@ pub fn inspector() -> impl Piece {
                                         .font(Font::Callout)
                                         .monospace()
                                         .selectable()
-                                        .id("service-endpoint"),
+                                        .id(day::id!(service_endpoint)),
                                         when(
                                             move || {
                                                 s.service().is_some_and(|v| {
@@ -105,7 +105,7 @@ pub fn inspector() -> impl Piece {
                                                 label(res::str::connection_ready())
                                                     .font(Font::Caption)
                                                     .secondary()
-                                                    .id("connection-ready")
+                                                    .id(day::id!(connection_ready))
                                             },
                                         ),
                                         row((
@@ -120,7 +120,7 @@ pub fn inspector() -> impl Piece {
                                                         })
                                                 })
                                                 .action(move || s.connect(false))
-                                                .id("tcp-connect"),
+                                                .id(day::id!(tcp_connect)),
                                             button(res::str::http_get())
                                                 .enabled(move || {
                                                     !s.probing.get()
@@ -130,7 +130,7 @@ pub fn inspector() -> impl Piece {
                                                         })
                                                 })
                                                 .action(move || s.connect(true))
-                                                .id("http-get"),
+                                                .id(day::id!(http_get)),
                                         ))
                                         .spacing(8.0)
                                         .fit(RowFit::Wrap { run_spacing: 8.0 }),
@@ -147,7 +147,7 @@ pub fn inspector() -> impl Piece {
                                                     .padding(8.0)
                                                     .background(Color::hex(0x167558))
                                                     .corner_radius(8.0)
-                                                    .id("connection-ok")
+                                                    .id(day::id!(connection_ok))
                                             },
                                         ),
                                         when(
@@ -155,7 +155,11 @@ pub fn inspector() -> impl Piece {
                                             move || {
                                                 style::code_panel(
                                                     move || s.probe.get(),
-                                                    "probe-result",
+                                                    (
+                                                        day::id!(probe_result),
+                                                        day::id!(probe_result_horizontal),
+                                                        day::id!(probe_result_vertical),
+                                                    ),
                                                     Some(180.0),
                                                 )
                                             },
@@ -176,7 +180,11 @@ pub fn inspector() -> impl Piece {
                                                     })
                                                     .unwrap_or_default()
                                             },
-                                            "service-addresses",
+                                            (
+                                                day::id!(service_addresses),
+                                                day::id!(service_addresses_horizontal),
+                                                day::id!(service_addresses_vertical),
+                                            ),
                                             None,
                                         ),
                                     ))
@@ -230,7 +238,11 @@ pub fn inspector() -> impl Piece {
                                                     })
                                                     .unwrap_or_default()
                                             },
-                                            "service-txt",
+                                            (
+                                                day::id!(service_txt),
+                                                day::id!(service_txt_horizontal),
+                                                day::id!(service_txt_vertical),
+                                            ),
                                             None,
                                         ),
                                     ))
@@ -263,7 +275,11 @@ pub fn inspector() -> impl Piece {
                                     .collect::<Vec<_>>()
                                     .join("\n")
                             },
-                            "event-log",
+                            (
+                                day::id!(event_log),
+                                day::id!(event_log_horizontal),
+                                day::id!(event_log_vertical),
+                            ),
                             Some(140.0),
                         )
                     },
@@ -275,5 +291,5 @@ pub fn inspector() -> impl Piece {
         .align(HAlign::Leading)
         .padding(20.0),
     )
-    .id("inspector-scroll")
+    .id(day::id!(inspector_scroll))
 }

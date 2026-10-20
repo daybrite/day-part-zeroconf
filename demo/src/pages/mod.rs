@@ -13,22 +13,22 @@ pub fn publisher() -> impl Piece {
         column((
             label(res::str::publish())
                 .font(Font::Title)
-                .id("publisher-title"),
+                .id(day::id!(publisher_title)),
             label(res::str::publish_caption()).font(Font::Footnote),
             section((
                 labeled(
                     res::str::instance_name(),
-                    text_field(s.name).id("publish-name"),
+                    text_field(s.name).id(day::id!(publish_name)),
                 ),
                 labeled(
                     res::str::service_type(),
-                    text_field(s.publish_kind).id("publish-type"),
+                    text_field(s.publish_kind).id(day::id!(publish_type)),
                 ),
                 labeled(
                     res::str::port(),
                     text_field(s.port)
                         .placeholder(res::str::port_hint())
-                        .id("publish-port"),
+                        .id(day::id!(publish_port)),
                 ),
                 labeled(
                     res::str::txt_records(),
@@ -36,24 +36,26 @@ pub fn publisher() -> impl Piece {
                         .min_lines(3)
                         .max_lines(6)
                         .spellcheck(false)
-                        .id("publish-txt"),
+                        .id(day::id!(publish_txt)),
                 ),
                 label(res::str::txt_hint()).font(Font::Footnote),
                 row((
                     button(res::str::advertise())
                         .enabled(move || !s.publishing.get())
                         .action(move || s.publish())
-                        .id("publish-start"),
+                        .id(day::id!(publish_start)),
                     button(res::str::withdraw())
                         .enabled(move || s.publishing.get())
                         .action(move || s.stop_publish())
-                        .id("publish-stop"),
+                        .id(day::id!(publish_stop)),
                 ))
                 .spacing(8.0),
-                label(s.publish_status).selectable().id("publish-status"),
+                label(s.publish_status)
+                    .selectable()
+                    .id(day::id!(publish_status)),
                 when(
                     move || s.published.get(),
-                    || label(res::str::advertisement_active()).id("advertisement-active"),
+                    || label(res::str::advertisement_active()).id(day::id!(advertisement_active)),
                 ),
             ))
             .title(res::str::advertisement()),

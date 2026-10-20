@@ -1,38 +1,38 @@
 # Same native roundtrip on each platform; no pre-existing LAN service is needed.
 name: zeroconf
 flow:
-  - wait_for: { id: browser-title }
+  - wait_for: { id: browser_title }
   - navigate: { route: publish }
-  - wait_for: { id: publisher-title }
-  - input: { id: publish-name, text: "Day discovery fixture" }
-  - input: { id: publish-type, text: "_dayzc._tcp" }
-  - tap: { id: publish-start }
-  - wait_for: { id: advertisement-active, timeout_secs: 30 }
+  - wait_for: { id: publisher_title }
+  - input: { id: publish_name, text: "Day discovery fixture" }
+  - input: { id: publish_type, text: "_dayzc._tcp" }
+  - tap: { id: publish_start }
+  - wait_for: { id: advertisement_active, timeout_secs: 30 }
   - screenshot: publishing
   - navigate: { route: browse }
-  - input: { id: browse-type, text: "_dayzc._tcp" }
-  - input: { id: service-search, text: "Day discovery fixture" }
-  - tap: { id: browse-start }
-  - assert_text: { id: browse-status, key: browsing, timeout_secs: 30 }
-  - wait_for: { id: services-found, timeout_secs: 30 }
-  - select: { id: service-list, index: 0 }
-  - wait_for: { id: connection-ready, timeout_secs: 30 }
+  - input: { id: browse_type, text: "_dayzc._tcp" }
+  - input: { id: service_search, text: "Day discovery fixture" }
+  - tap: { id: browse_start }
+  - assert_text: { id: browse_status, key: browsing, timeout_secs: 30 }
+  - wait_for: { id: services_found, timeout_secs: 30 }
+  - select: { id: service_list, index: 0 }
+  - wait_for: { id: connection_ready, timeout_secs: 30 }
   - screenshot: inspection
-  - scroll_to: { id: tcp-connect }
-  - tap: { id: tcp-connect }
-  - wait_for: { id: connection-ok, timeout_secs: 15 }
-  - scroll_to: { id: http-get }
-  - tap: { id: http-get }
-  - wait_for: { id: connection-ok, timeout_secs: 15 }
+  - scroll_to: { id: tcp_connect }
+  - tap: { id: tcp_connect }
+  - wait_for: { id: connection_ok, timeout_secs: 15 }
+  - scroll_to: { id: http_get }
+  - tap: { id: http_get }
+  - wait_for: { id: connection_ok, timeout_secs: 15 }
   - screenshot: connected
   - nav_back: { only_on: [uikit, mdc, arkui] }
   - navigate: { route: publish }
-  - tap: { id: publish-stop }
-  - assert_text: { id: publish-status, key: not_publishing }
+  - tap: { id: publish_stop }
+  - assert_text: { id: publish_status, key: not_publishing }
   - navigate: { route: browse }
-  - assert_text: { id: service-count, key: service_count, args: { count: "0" }, timeout_secs: 30 }
-  - input: { id: service-search, text: "no-such-synthetic-fixture" }
-  - assert_visible: { id: services-empty }
-  - tap: { id: browse-stop }
-  - assert_text: { id: browse-status, key: stopped }
+  - assert_text: { id: service_count, key: service_count, args: { count: "0" }, timeout_secs: 30 }
+  - input: { id: service_search, text: "no-such-synthetic-fixture" }
+  - assert_visible: { id: services_empty }
+  - tap: { id: browse_stop }
+  - assert_text: { id: browse_status, key: stopped }
   - screenshot: stopped

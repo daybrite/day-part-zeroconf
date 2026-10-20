@@ -3,10 +3,10 @@
 name: presentation
 flow:
   - navigate: { route: publish }
-  - input: { id: publish-name, text: "Day presentation fixture with a longer service name" }
-  - input: { id: publish-type, text: "_dayzc._tcp" }
+  - input: { id: publish_name, text: "Day presentation fixture with a longer service name" }
+  - input: { id: publish_type, text: "_dayzc._tcp" }
   - input:
-      id: publish-txt
+      id: publish_txt
       text: |-
         path=/
         version=1
@@ -20,31 +20,31 @@ flow:
         feature-e=enabled
         feature-f=enabled
         final-attribute=visible by scrolling
-  - tap: { id: publish-start }
-  - wait_for: { id: advertisement-active, timeout_secs: 30 }
+  - tap: { id: publish_start }
+  - wait_for: { id: advertisement_active, timeout_secs: 30 }
   - navigate: { route: browse }
-  - input: { id: browse-type, text: "_dayzc._tcp" }
-  - input: { id: service-search, text: "Day presentation fixture" }
-  - tap: { id: browse-start }
-  - wait_for: { id: services-found, timeout_secs: 30 }
+  - input: { id: browse_type, text: "_dayzc._tcp" }
+  - input: { id: service_search, text: "Day presentation fixture" }
+  - tap: { id: browse_start }
+  - wait_for: { id: services_found, timeout_secs: 30 }
   - pause: 0.5
   - screenshot: browser-long-name
-  - select: { id: service-list, index: 0 }
-  - wait_for: { id: connection-ready, timeout_secs: 30 }
+  - select: { id: service_list, index: 0 }
+  - wait_for: { id: connection_ready, timeout_secs: 30 }
   - pause: 0.5
   - screenshot: inspector-long-name
-  - scroll_to: { id: inspector-scroll, x: 0, y: 350 }
+  - scroll_to: { id: inspector_scroll, x: 0, y: 350 }
   - screenshot: txt-leading
-  - scroll_to: { id: service-txt-horizontal, edge: trailing }
+  - scroll_to: { id: service_txt_horizontal, edge: trailing }
   - screenshot: txt-trailing
-  - scroll_to: { id: service-txt-horizontal, edge: leading }
-  - scroll_to: { id: service-txt-vertical, edge: bottom }
+  - scroll_to: { id: service_txt_horizontal, edge: leading }
+  - scroll_to: { id: service_txt_vertical, edge: bottom }
   - screenshot: txt-bottom
-  - scroll_to: { id: tcp-connect }
-  - tap: { id: tcp-connect }
-  - wait_for: { id: connection-ok, timeout_secs: 15 }
+  - scroll_to: { id: tcp_connect }
+  - tap: { id: tcp_connect }
+  - wait_for: { id: connection_ok, timeout_secs: 15 }
   - nav_back: { only_on: [uikit, mdc, arkui] }
-  - tap: { id: browse-stop }
+  - tap: { id: browse_stop }
   - navigate: { route: publish }
-  - tap: { id: publish-stop }
-  - assert_text: { id: publish-status, key: not_publishing }
+  - tap: { id: publish_stop }
+  - assert_text: { id: publish_status, key: not_publishing }
