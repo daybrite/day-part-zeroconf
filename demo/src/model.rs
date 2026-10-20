@@ -299,8 +299,13 @@ impl Scene {
                         match event {
                             Event::Registered(id) => {
                                 self.published.set(true);
-                                self.publish_status
-                                    .set(res::str::advertised(id.name, port.to_string()).format());
+                                self.publish_status.set(
+                                    res::str::advertised(res::str::Advertised {
+                                        name: id.name,
+                                        port: port.to_string(),
+                                    })
+                                    .format(),
+                                );
                             }
                             Event::Error(e) => {
                                 self.publish_status.set(error(&e));

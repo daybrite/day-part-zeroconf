@@ -60,8 +60,11 @@ pub fn inspector() -> impl Piece {
                             s.selected
                                 .get()
                                 .map(|id| {
-                                    res::str::service_location(id.domain, id.interface.to_string())
-                                        .format()
+                                    res::str::service_location(res::str::ServiceLocation {
+                                        domain: id.domain,
+                                        interface: id.interface.to_string(),
+                                    })
+                                    .format()
                                 })
                                 .unwrap_or_default()
                         })
@@ -80,10 +83,10 @@ pub fn inspector() -> impl Piece {
                                         label(move || {
                                             s.service()
                                                 .map(|v| {
-                                                    res::str::endpoint(
-                                                        v.hostname,
-                                                        v.port.to_string(),
-                                                    )
+                                                    res::str::endpoint(res::str::Endpoint {
+                                                        host: v.hostname,
+                                                        port: v.port.to_string(),
+                                                    })
                                                     .format()
                                                 })
                                                 .unwrap_or_default()

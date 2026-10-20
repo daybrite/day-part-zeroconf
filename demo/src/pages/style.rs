@@ -36,19 +36,17 @@ pub fn code_panel(
     let measure_text = text.clone();
     // Day's scroll viewport needs an explicit vertical extent. Rebuild only when the
     // visible line count changes; same-height value updates preserve the scroll position.
-    each(
-        items(
-            move || {
-                vec![if height.is_some() {
-                    0
-                } else {
-                    measure_text().lines().count().clamp(2, 10)
-                }]
-            },
-            |lines: &usize| *lines,
-        ),
-        move |slot| {
+    keyed(
+        move || {
+            Some(if height.is_some() {
+                0
+            } else {
+                measure_text().lines().count().clamp(2, 10)
+            })
+        },
+        move |lines: &usize| {
             let text = text.clone();
+            let lines = *lines;
             scroll(
                 scroll(
                     label(move || text())
@@ -63,7 +61,7 @@ pub fn code_panel(
                 .id(format!("{id}-horizontal")),
             )
             .id(format!("{id}-vertical"))
-            .height(height.unwrap_or(slot.get() as f64 * 20.0 + 28.0))
+            .height(height.unwrap_or(lines as f64 * 20.0 + 28.0))
             .background(Color::hex(0x172536))
             .corner_radius(12.0)
             .grow_w()

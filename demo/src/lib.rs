@@ -10,12 +10,7 @@ day::day_start!(options: window(), root);
 day::resources!();
 day::routes! { pub(crate) enum Section { Browse=>"browse", Publish=>"publish", Settings=>"settings" } }
 pub fn window() -> day::WindowOptions {
-    day::WindowOptions {
-        locales: Some((res::locales::DEFAULT, res::locales::CATALOG)),
-        title_fn: Some(|| res::str::app_title().format()),
-        size: Size::new(1000.0, 760.0),
-        ..Default::default()
-    }
+    res::window_options().size(1000.0, 760.0)
 }
 pub fn root() -> impl Piece {
     // Settings and About: appearance and language from Day's catalog, the app's name and
@@ -29,37 +24,30 @@ pub fn root() -> impl Piece {
     Scene::scoped(move |s| {
         nav(s.section)
             .title(res::str::app_title())
-            .content_list(pages::browser)
-            .content_list_width(340.0)
-            .content_list_for(|v: &Section| matches!(v, Section::Browse))
-            .detail_visible(s.detail_open)
-            .detail_title(move || {
-                s.selected
-                    .get()
-                    .map_or_else(|| res::str::inspector().format(), |id| id.name)
-            })
-            .item_icon(
-                Section::Browse,
-                res::str::browse(),
-                res::vectors::network,
-                pages::inspector,
+            .content_list(
+                ContentList::new(pages::browser)
+                    .width(340.0)
+                    .only_for(|v: &Section| matches!(v, Section::Browse))
+                    .detail_visible(s.detail_open)
+                    .detail_title(move || {
+                        s.selected
+                            .get()
+                            .map_or_else(|| res::str::inspector().format(), |id| id.name)
+                    }),
             )
-            .item_icon(
-                Section::Publish,
-                res::str::publish(),
-                res::vectors::publish,
-                pages::publisher,
-            )
-            // Use the desktop's conventional Settings menu/window; without a menu bar,
-            // keep Settings reachable as a navigation section.
-            .items(
-                {
-                    let prefs = prefs.clone();
-                    move || prefs.nav_keys(Section::Settings)
-                },
-                |v: &Section| item(*v, res::str::nav_settings()).icon(res::vectors::tab_settings),
-            )
-            .destination(move |_: &Section| prefs.page())
+            .items((
+                item(Section::Browse, res::str::browse())
+                    .icon(res::vectors::network)
+                    .page(pages::inspector),
+                item(Section::Publish, res::str::publish())
+                    .icon(res::vectors::publish)
+                    .page(pages::publisher),
+                // Use the desktop's conventional Settings menu/window; without a menu bar,
+                // keep Settings reachable as a navigation section.
+                prefs
+                    .nav_item(Section::Settings)
+                    .map(|i| i.icon(res::vectors::tab_settings)),
+            ))
             .id("nav")
     })
 }
