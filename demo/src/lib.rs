@@ -16,7 +16,7 @@ pub fn root() -> impl Piece {
     // Settings and About: appearance and language from Day's catalog, the app's name and
     // version from Day.toml. On desktop this adds the app menu's Settings… and About items and
     // their windows; on a phone it is the page behind the Settings section below.
-    // https://daybrite.dev/docs/settings/
+    // https://daybrite.dev/docs/reference/settings
     let prefs = Preferences::new()
         .about(About::from_manifest().link(res::str::day_about_website(), "https://daybrite.dev"))
         .group(general_group(res::locales::ALL))

@@ -3,11 +3,11 @@
     App-owned Android manifest overlay. Day merges this with its generated manifest
     and dependency contributions; keep only your customizations here. You may delete
     this file to use Day's defaults. It does not require a checked-in Gradle project.
-    Guide: https://daybrite.dev/docs/platforms/android-mdc#manifest-customization
+    Guide: https://daybrite.dev/docs/reference/platforms/android-mdc#manifest-customization
 
     Keep app identity, version, window sizes, and portable permissions in Day.toml:
-    https://daybrite.dev/docs/project-structure/
-    https://daybrite.dev/docs/guide-permissions/
+    https://daybrite.dev/docs/reference/project-structure
+    https://daybrite.dev/docs/how-to/guide-permissions
 
     Add Android-only uses-feature or queries elements under manifest, and components
     or meta-data under application. Reference localized Android string resources for
@@ -16,7 +16,7 @@
     Android merges matching elements by name. Conflicting attributes need explicit
     tools:replace; tools:node="remove" removes a lower-priority declaration.
     Avoid copying Day's activities or launcher/deep-link intent filters wholesale.
-    https://daybrite.dev/docs/navigation/
+    https://daybrite.dev/docs/how-to/navigation
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
