@@ -18,7 +18,7 @@ pub fn root() -> impl Piece {
     // their windows; on a phone it is the page behind the Settings section below.
     // https://daybrite.dev/docs/settings/
     let prefs = Preferences::new()
-        .about(About::from_manifest().link(day::tr("day-about-website"), "https://daybrite.dev"))
+        .about(About::from_manifest().link(res::str::day_about_website(), "https://daybrite.dev"))
         .group(general_group(res::locales::ALL))
         .install();
     Scene::scoped(move |s| {
