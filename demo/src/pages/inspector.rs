@@ -285,7 +285,7 @@ pub fn inspector() -> impl Piece {
                     },
                 ),
             ))
-            .title(res::str::activity()),
+            .title(res::str::spinner()),
         ))
         .spacing(24.0)
         .align(HAlign::Leading)
