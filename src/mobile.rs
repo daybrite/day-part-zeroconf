@@ -113,7 +113,7 @@ day_bridge::bridge! {
  import java.nio.charset.StandardCharsets;
  import java.util.ArrayDeque;
  import java.util.concurrent.ConcurrentHashMap;
- import dev.daybrite.day.bridge.DayBridge;
+ import dev.daybrite.day.bridge.DayRuntime;
  "#,body=r#"
  private static final ConcurrentHashMap<Long, Op> ops = new ConcurrentHashMap<>();
  private static final ArrayDeque<Runnable> resolveQueue = new ArrayDeque<>();
@@ -129,7 +129,7 @@ day_bridge::bridge! {
  }
  private static class Op {
   final long token; final NsdManager manager; volatile boolean stopped; NsdManager.DiscoveryListener browse; NsdManager.RegistrationListener registration; NsdManager.ServiceInfoCallback updates; WifiManager.MulticastLock lock;
-  Op(long token) { this.token = token; manager = (NsdManager)DayBridge.ctx.getSystemService(Context.NSD_SERVICE); }
+  Op(long token) { this.token = token; manager = (NsdManager)DayRuntime.ctx.getSystemService(Context.NSD_SERVICE); }
   void send(Frame f) { if (!stopped) operation_native_emit(token, f.bytes.toByteArray()); }
   void error(int code, String operation) { send(new Frame(6).num(code).str(operation)); }
   Frame identity(int tag, NsdServiceInfo s) { return new Frame(tag).str(s.getServiceName()).str(s.getServiceType()).str("local."); }
@@ -148,12 +148,12 @@ day_bridge::bridge! {
    send(f.raw(txt.toByteArray()));
   }
  }
- public static boolean permission_required_native() { return Build.VERSION.SDK_INT >= 37 && DayBridge.ctx.getApplicationInfo().targetSdkVersion >= 37; }
+ public static boolean permission_required_native() { return Build.VERSION.SDK_INT >= 37 && DayRuntime.ctx.getApplicationInfo().targetSdkVersion >= 37; }
  public static void operation_native(int mode,String name,String kind,String domain,int port,byte[] txt,long events) {
   Op op = new Op(events); ops.put(events,op);
   try {
-   if (Build.VERSION.SDK_INT >= 37 && DayBridge.ctx.getApplicationInfo().targetSdkVersion >= 37 && DayBridge.ctx.checkSelfPermission("android.permission.ACCESS_LOCAL_NETWORK") != android.content.pm.PackageManager.PERMISSION_GRANTED) { op.error(-1,"ACCESS_LOCAL_NETWORK"); return; }
-   WifiManager wifi = (WifiManager)DayBridge.ctx.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+   if (Build.VERSION.SDK_INT >= 37 && DayRuntime.ctx.getApplicationInfo().targetSdkVersion >= 37 && DayRuntime.ctx.checkSelfPermission("android.permission.ACCESS_LOCAL_NETWORK") != android.content.pm.PackageManager.PERMISSION_GRANTED) { op.error(-1,"ACCESS_LOCAL_NETWORK"); return; }
+   WifiManager wifi = (WifiManager)DayRuntime.ctx.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
    if (wifi != null && Build.VERSION.SDK_INT < 34) { op.lock = wifi.createMulticastLock("day-zeroconf"); op.lock.setReferenceCounted(false); op.lock.acquire(); }
    if (mode == 0) {
     op.browse = new NsdManager.DiscoveryListener() {

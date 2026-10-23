@@ -1,7 +1,6 @@
 app_title = Zeroconf Explorer
 browse = Browse network
 publish = Publish a service
-nav_settings = Settings
 inspector = Service inspector
 ready = Choose a service type, or leave it blank to browse all types.
 starting = Starting…
