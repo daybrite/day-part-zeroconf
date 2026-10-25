@@ -25,7 +25,7 @@ flow:
   - tap: { id: http_get }
   - wait_for: { id: connection_ok, timeout_secs: 15 }
   - screenshot: connected
-  - nav_back: { only_on: [uikit, mdc, arkui] }
+  - nav_back: { only_on: [uikit, material, arkui] }
   - navigate: { route: publish }
   - tap: { id: publish_stop }
   - assert_text: { id: publish_status, key: not_publishing }

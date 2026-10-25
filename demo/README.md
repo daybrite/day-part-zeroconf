@@ -8,7 +8,7 @@ publish a service, and test TCP or plain-HTTP connections.
 
 ```sh
 day launch -t macos-appkit
-# Also: linux-gtk, linux-qt, windows-winui, ios-uikit, android-mdc, harmony-arkui
+# Also: linux-gtk, linux-qt, windows-winui, ios-uikit, android-material, harmony-arkui
 ```
 
 Leave the service type blank to enumerate types, or enter a type such as `_calibre._tcp`.

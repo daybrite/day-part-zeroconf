@@ -77,13 +77,13 @@ jobs:
     secrets: inherit
     with:
       project-path: demo
-      targets: macos-appkit, linux-gtk, linux-qt, windows-winui, ios-uikit, android-mdc, harmony-arkui
+      targets: macos-appkit, linux-gtk, linux-qt, windows-winui, ios-uikit, android-material, harmony-arkui
       update-day-deps: true
       launch-env: DAY_ZEROCONF_TRACE=1
       script-setup: source ../ci/demo-setup.sh
       scripts: dayscript/demo.yaml dayscript/presentation.yaml
       target-scripts: |
-        macos-appkit, linux-gtk, linux-qt, android-mdc: dayscript/demo.yaml dayscript/enumeration.yaml dayscript/presentation.yaml
+        macos-appkit, linux-gtk, linux-qt, android-material: dayscript/demo.yaml dayscript/enumeration.yaml dayscript/presentation.yaml
       preflight-checks: fmt, clippy, test
       target-packages: |
         linux-gtk, linux-qt: avahi-daemon libavahi-client3 dbus

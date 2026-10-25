@@ -115,7 +115,7 @@ cargo test
 cargo clippy --all-targets -- -D warnings
 day lint --strict
 day launch -t macos-appkit --script dayscript/demo.yaml
-# ios-uikit, android-mdc, linux-gtk, linux-qt, windows-winui, harmony-arkui
+# ios-uikit, android-material, linux-gtk, linux-qt, windows-winui, harmony-arkui
 ```
 
 `dayscript/demo.yaml` exercises real publish → browse → resolve → TCP → HTTP → withdraw.

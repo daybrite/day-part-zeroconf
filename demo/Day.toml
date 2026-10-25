@@ -6,7 +6,7 @@ schema = 1
 id = "dev.daybrite.zeroconfdemo"
 title = "Zeroconf Explorer"
 build = 1
-targets = ["macos-appkit", "linux-gtk", "linux-qt", "ios-uikit", "android-mdc", "harmony-arkui", "windows-winui"]
+targets = ["macos-appkit", "linux-gtk", "linux-qt", "ios-uikit", "android-material", "harmony-arkui", "windows-winui"]
 
 # The window's geometry in points (https://daybrite.dev/docs/reference/size-classes). `width`/`height` are
 # the desktop default and the size a desktop-windowing Android window opens at; the minimum is
