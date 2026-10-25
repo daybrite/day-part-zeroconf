@@ -24,7 +24,7 @@ mock = ["day/mock"]
 name = "dayapp"
 
 [dependencies]
-day = { git = "https://github.com/daybrite/day.git" }
+day = { package = "day-app", git = "https://github.com/daybrite/day.git" }
 day-piece-settings = { git = "https://github.com/daybrite/day.git" }
 day-part-zeroconf = { path = ".." }
 day-part-permissions = { git = "https://github.com/daybrite/day.git" }
