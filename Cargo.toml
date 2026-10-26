@@ -6,16 +6,15 @@ rust-version = "1.89"
 description = "Native DNS-SD discovery and advertisement for Day apps"
 repository = "https://github.com/daybrite/day-part-zeroconf"
 license = "MPL-2.0"
-publish = false
 
 [package.metadata.day]
 compat = "0.6"
 
 [target.'cfg(any(target_os = "android", target_env = "ohos"))'.dependencies]
-day-bridge = { git = "https://github.com/daybrite/day.git" }
+day-bridge = "0.6"
 
 [target.'cfg(target_os = "android")'.dependencies]
-day-platform-android = { git = "https://github.com/daybrite/day.git" }
+day-platform-android = "0.6"
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 libc = "0.2"
@@ -27,7 +26,7 @@ libloading = "0.8"
 windows-sys = { version = "0.61", features = ["Win32_NetworkManagement_Dns", "Win32_Foundation", "Win32_System_SystemInformation"] }
 
 [build-dependencies]
-day-build = { git = "https://github.com/daybrite/day.git" }
+day-build = "0.6"
 
 [package.metadata.day.android]
 permissions = ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.CHANGE_WIFI_MULTICAST_STATE"]

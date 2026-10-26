@@ -5,6 +5,11 @@ on:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      day-main:
+        description: Build against day's main branch instead of the newest release
+        type: boolean
+        default: false
   schedule:
     - cron: '25 6 * * *'
 permissions:
@@ -24,6 +29,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      # Day from crates.io, or from main on a push (daybrite/actions day-deps).
+      - uses: daybrite/actions/.github/actions/day-deps@v1
+        with:
+          day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
       - if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -69,16 +78,23 @@ jobs:
         with:
           targets: ${{ matrix.target }}
           components: clippy
+      # Day from crates.io, or from main on a push (daybrite/actions day-deps).
+      - uses: daybrite/actions/.github/actions/day-deps@v1
+        with:
+          day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
       - run: cargo clippy --target ${{ matrix.target }} -- -D warnings
   demo:
     uses: daybrite/actions/.github/workflows/dayapp.yml@v1
     permissions:
       contents: write # Shared workflow uses this only for release assets on a tag.
+      id-token: write # crates.io Trusted Publishing (publish-crates)
     secrets: inherit
     with:
       project-path: demo
       targets: macos-appkit, linux-gtk, linux-qt, windows-winui, ios-uikit, android-material, harmony-arkui
-      update-day-deps: true
+      day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
+      # On a version tag, after every leg passed: the library crates to crates.io.
+      publish-crates: true
       launch-env: DAY_ZEROCONF_TRACE=1
       script-setup: source ../ci/demo-setup.sh
       scripts: dayscript/demo.yaml dayscript/presentation.yaml

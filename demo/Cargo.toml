@@ -24,13 +24,13 @@ mock = ["day/mock"]
 name = "dayapp"
 
 [dependencies]
-day = { package = "day-app", git = "https://github.com/daybrite/day.git" }
-day-piece-settings = { git = "https://github.com/daybrite/day.git" }
+day = { package = "day-app", version = "0.6" }
+day-piece-settings = "0.6"
 day-part-zeroconf = { path = ".." }
-day-part-permissions = { git = "https://github.com/daybrite/day.git" }
+day-part-permissions = "0.6"
 
 [build-dependencies]
-day-build = { git = "https://github.com/daybrite/day.git" }
+day-build = "0.6"
 
 
 [workspace]
