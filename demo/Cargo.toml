@@ -24,13 +24,13 @@ mock = ["day/mock"]
 name = "dayapp"
 
 [dependencies]
-day = { package = "day-app", version = "0.6" }
-day-piece-settings = "0.6"
-day-part-zeroconf = { path = ".." }
-day-part-permissions = "0.6"
+day = { package = "day-app", version = "0.*" }
+day-piece-settings = "0.*"
+day-part-zeroconf = { version = "0.*", path = ".." }
+day-part-permissions = "0.*"
 
 [build-dependencies]
-day-build = "0.6"
+day-build = "0.*"
 
 
 [workspace]
