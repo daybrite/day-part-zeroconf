@@ -23,14 +23,14 @@ pub fn browser() -> impl Piece {
                 button(res::str::start())
                     .action(move || s.browse())
                     .id(day::id!(browse_start))
-                    .grow_w(),
+                    .grow(Dimension::Width),
                 button(res::str::stop())
                     .action(move || s.stop_browse())
                     .enabled(move || s.browsing.get())
                     .id(day::id!(browse_stop)),
             ))
             .spacing(8.0)
-            .grow_w(),
+            .grow(Dimension::Width),
             label(s.status)
                 .font(Font::Caption)
                 .secondary()
@@ -44,7 +44,7 @@ pub fn browser() -> impl Piece {
                     .font(Font::Footnote)
                     .bold()
                     .id(day::id!(service_count))
-                    .grow_w(),
+                    .grow(Dimension::Width),
                 when(
                     move || !s.rows().is_empty(),
                     || {
@@ -56,7 +56,7 @@ pub fn browser() -> impl Piece {
                 ),
             ))
             .spacing(8.0)
-            .grow_w(),
+            .grow(Dimension::Width),
             when(
                 move || s.rows().is_empty(),
                 || {
@@ -96,12 +96,12 @@ pub fn browser() -> impl Piece {
                     ))
                     .spacing(4.0)
                     .align(HAlign::Leading)
-                    .grow_w(),
+                    .grow(Dimension::Width),
                 ))
                 .spacing(12.0)
                 .align(VAlign::Top)
                 .padding(Insets::symmetric(12.0, 16.0))
-                .grow_w()
+                .grow(Dimension::Width)
             },
         )
         .row_height(RowHeight::Uniform(88.0))
@@ -115,8 +115,8 @@ pub fn browser() -> impl Piece {
         })
         .a11y(|a| a.label(res::str::services()))
         .id(day::id!(service_list))
-        .grow(),
+        .grow(Dimension::Both),
     ))
     .align(HAlign::Leading)
-    .grow()
+    .grow(Dimension::Both)
 }

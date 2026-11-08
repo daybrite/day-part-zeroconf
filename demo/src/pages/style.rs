@@ -65,7 +65,7 @@ pub fn code_panel(
             .height(height.unwrap_or(lines as f64 * 20.0 + 28.0))
             .background(Color::hex(0x172536))
             .corner_radius(12.0)
-            .grow_w()
+            .grow(Dimension::Width)
         },
     )
 }

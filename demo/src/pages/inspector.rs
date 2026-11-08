@@ -47,11 +47,11 @@ pub fn inspector() -> impl Piece {
                             .monospace()
                             .secondary()
                             .selectable()
-                            .grow_w(),
+                            .grow(Dimension::Width),
                         ))
                         .spacing(12.0)
                         .align(VAlign::Center)
-                        .grow_w(),
+                        .grow(Dimension::Width),
                         label(move || s.selected.get().map(|id| id.name).unwrap_or_default())
                             .font(Font::Title2)
                             .bold()
