@@ -95,23 +95,21 @@ unsafe extern "system" fn browse_callback(
                         {
                             emit(&c.sink, Event::ServiceType(t));
                         }
-                    } else {
-                        if let Some(name) = instance(target, kind) {
-                            let id = ServiceId {
-                                name,
-                                service_type: kind.clone(),
-                                domain: "local.".into(),
-                                interface: *interface,
-                            };
-                            emit(
-                                &c.sink,
-                                if r.dwTtl == 0 {
-                                    Event::Removed(id)
-                                } else {
-                                    Event::Found(id)
-                                },
-                            );
-                        }
+                    } else if let Some(name) = instance(target, kind) {
+                        let id = ServiceId {
+                            name,
+                            service_type: kind.clone(),
+                            domain: "local.".into(),
+                            interface: *interface,
+                        };
+                        emit(
+                            &c.sink,
+                            if r.dwTtl == 0 {
+                                Event::Removed(id)
+                            } else {
+                                Event::Found(id)
+                            },
+                        );
                     }
                 }
                 p = r.pNext;
