@@ -3,6 +3,7 @@
 use super::style;
 use crate::{model::Scene, network, res};
 use day::prelude::*;
+use std::fmt::Write as _;
 
 pub fn inspector() -> impl Piece {
     let s = Scene::ambient();
@@ -31,42 +32,31 @@ pub fn inspector() -> impl Piece {
                         row((
                             style::emblem(move || {
                                 style::accent(
-                                    &s.selected
-                                        .get()
-                                        .map(|id| id.service_type)
-                                        .unwrap_or_default(),
+                                    &s.selected.get().map_or_default(|id| id.service_type),
                                 )
                             }),
-                            label(move || {
-                                s.selected
-                                    .get()
-                                    .map(|id| id.service_type)
-                                    .unwrap_or_default()
-                            })
-                            .font(Font::Footnote)
-                            .monospace()
-                            .secondary()
-                            .selectable()
-                            .grow(Dimension::Width),
+                            label(move || s.selected.get().map_or_default(|id| id.service_type))
+                                .font(Font::Footnote)
+                                .monospace()
+                                .secondary()
+                                .selectable()
+                                .grow(Dimension::Width),
                         ))
                         .spacing(12.0)
                         .align(VAlign::Center)
                         .grow(Dimension::Width),
-                        label(move || s.selected.get().map(|id| id.name).unwrap_or_default())
+                        label(move || s.selected.get().map_or_default(|id| id.name))
                             .font(Font::Title2)
                             .bold()
                             .id(day::id!(service_name)),
                         label(move || {
-                            s.selected
-                                .get()
-                                .map(|id| {
-                                    res::str::service_location(res::str::ServiceLocation {
-                                        domain: id.domain,
-                                        interface: id.interface.to_string(),
-                                    })
-                                    .format()
+                            s.selected.get().map_or_default(|id| {
+                                res::str::service_location(res::str::ServiceLocation {
+                                    domain: id.domain,
+                                    interface: id.interface.to_string(),
                                 })
-                                .unwrap_or_default()
+                                .format()
+                            })
                         })
                         .font(Font::Footnote)
                         .secondary()
@@ -81,15 +71,13 @@ pub fn inspector() -> impl Piece {
                                 column((
                                     section((
                                         label(move || {
-                                            s.service()
-                                                .map(|v| {
-                                                    res::str::endpoint(res::str::Endpoint {
-                                                        host: v.hostname,
-                                                        port: v.port.to_string(),
-                                                    })
-                                                    .format()
+                                            s.service().map_or_default(|v| {
+                                                res::str::endpoint(res::str::Endpoint {
+                                                    host: v.hostname,
+                                                    port: v.port.to_string(),
                                                 })
-                                                .unwrap_or_default()
+                                                .format()
+                                            })
                                         })
                                         .font(Font::Callout)
                                         .monospace()
@@ -98,7 +86,9 @@ pub fn inspector() -> impl Piece {
                                         when(
                                             move || {
                                                 s.service().is_some_and(|v| {
-                                                    v.addresses.iter().any(|a| a.is_ipv4())
+                                                    v.addresses
+                                                        .iter()
+                                                        .any(std::net::SocketAddr::is_ipv4)
                                                 })
                                             },
                                             || {
@@ -143,9 +133,9 @@ pub fn inspector() -> impl Piece {
                                                 label(res::str::connection_ok())
                                                     .font(Font::Footnote)
                                                     .bold()
-                                                    .color(Color::hex(0xffffff))
+                                                    .color(Color::hex(0x00ff_ffff))
                                                     .padding(8.0)
-                                                    .background(Color::hex(0x167558))
+                                                    .background(Color::hex(0x0016_7558))
                                                     .corner_radius(8.0)
                                                     .id(day::id!(connection_ok))
                                             },
@@ -170,15 +160,13 @@ pub fn inspector() -> impl Piece {
                                         label(res::str::addresses()).font(Font::Headline),
                                         style::code_panel(
                                             move || {
-                                                s.service()
-                                                    .map(|v| {
-                                                        v.addresses
-                                                            .iter()
-                                                            .map(ToString::to_string)
-                                                            .collect::<Vec<_>>()
-                                                            .join("\n")
-                                                    })
-                                                    .unwrap_or_default()
+                                                s.service().map_or_default(|v| {
+                                                    v.addresses
+                                                        .iter()
+                                                        .map(ToString::to_string)
+                                                        .collect::<Vec<_>>()
+                                                        .join("\n")
+                                                })
                                             },
                                             (
                                                 day::id!(service_addresses),
@@ -197,46 +185,44 @@ pub fn inspector() -> impl Piece {
                                             .secondary(),
                                         style::code_panel(
                                             move || {
-                                                s.service()
-                                                    .map(|v| {
-                                                        if v.txt.0.is_empty() {
-                                                            return res::str::no_txt().format();
-                                                        }
-                                                        v.txt
-                                                            .0
-                                                            .iter()
-                                                            .map(|(k, v)| match v {
-                                                                None => {
-                                                                    res::str::txt_flag(k.clone())
-                                                                        .format()
-                                                                }
-                                                                Some(v) => {
-                                                                    match std::str::from_utf8(v) {
-                                                                        Ok(text)
-                                                                            if !text
-                                                                                .chars()
-                                                                                .any(
-                                                                                char::is_control,
-                                                                            ) =>
-                                                                        {
-                                                                            format!("{k}={text}")
-                                                                        }
-                                                                        _ => format!(
-                                                                            "{k}=0x{}",
-                                                                            v.iter()
-                                                                                .map(|b| format!(
-                                                                                    "{b:02x}"
-                                                                                ))
-                                                                                .collect::<String>(
-                                                                                )
-                                                                        ),
+                                                s.service().map_or_default(|v| {
+                                                    if v.txt.0.is_empty() {
+                                                        return res::str::no_txt().format();
+                                                    }
+                                                    v.txt
+                                                        .0
+                                                        .iter()
+                                                        .map(|(k, v)| match v {
+                                                            None => res::str::txt_flag(k.clone())
+                                                                .format(),
+                                                            Some(v) => {
+                                                                match std::str::from_utf8(v) {
+                                                                    Ok(text)
+                                                                        if !text.chars().any(
+                                                                            char::is_control,
+                                                                        ) =>
+                                                                    {
+                                                                        format!("{k}={text}")
                                                                     }
+                                                                    _ => format!(
+                                                                        "{k}=0x{}",
+                                                                        v.iter().fold(
+                                                                            String::new(),
+                                                                            |mut hex, b| {
+                                                                                let _ = write!(
+                                                                                    hex,
+                                                                                    "{b:02x}"
+                                                                                );
+                                                                                hex
+                                                                            }
+                                                                        )
+                                                                    ),
                                                                 }
-                                                            })
-                                                            .collect::<Vec<_>>()
-                                                            .join("\n")
-                                                    })
-                                                    .unwrap_or_default()
+                                                            }
+                                                        })
+                                                        .collect::<Vec<_>>()
+                                                        .join("\n")
+                                                })
                                             },
                                             (
                                                 day::id!(service_txt),

@@ -72,7 +72,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<Event> {
                     format!("{address}:{port}")
                 };
                 if let Ok(a) = text.parse() {
-                    addresses.push(a)
+                    addresses.push(a);
                 }
             }
             let txt = TxtRecord::decode(r.bytes()?)?;
@@ -91,11 +91,11 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<Event> {
 mod tests {
     use super::*;
     fn number(b: &mut Vec<u8>, n: u32) {
-        b.extend(n.to_be_bytes())
+        b.extend(n.to_be_bytes());
     }
     fn field(b: &mut Vec<u8>, s: &[u8]) {
         number(b, s.len() as u32);
-        b.extend(s)
+        b.extend(s);
     }
     #[test]
     fn malformed_frames_rejected() {
@@ -104,7 +104,7 @@ mod tests {
             vec![0, 0, 0, 9],
             vec![0, 0, 0, 5, 255, 255, 255, 255],
         ] {
-            assert!(decode(&bytes).is_err())
+            assert!(decode(&bytes).is_err());
         }
     }
     #[test]
@@ -112,7 +112,7 @@ mod tests {
         let mut b = vec![];
         number(&mut b, 3);
         for s in ["Fixture", "_dayzc._tcp", "local.", "fixture.local."] {
-            field(&mut b, s.as_bytes())
+            field(&mut b, s.as_bytes());
         }
         number(&mut b, 1234);
         number(&mut b, 2);

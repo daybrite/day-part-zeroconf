@@ -5,20 +5,20 @@ use day::prelude::*;
 
 pub fn accent(kind: &str) -> Color {
     let hex = if kind.contains("http") || kind.contains("opds") {
-        0x2764c5
+        0x0027_64c5
     } else if kind.contains("airplay") || kind.contains("spotify") || kind.contains("raop") {
-        0x8250b5
+        0x0082_50b5
     } else if kind.contains("ipp") || kind.contains("printer") {
-        0xa75a20
+        0x00a7_5a20
     } else {
-        0x167d89
+        0x0016_7d89
     };
     Color::hex(hex)
 }
 
 pub fn emblem(color: impl Fn() -> Color + 'static) -> impl Piece {
     vector(res::vectors::network)
-        .tint(Color::hex(0xffffff))
+        .tint(Color::hex(0x00ff_ffff))
         .frame(20.0, 20.0)
         .padding(10.0)
         .background(color)
@@ -53,7 +53,7 @@ pub fn code_panel(
                     label(move || text())
                         .font(Font::System(13.0))
                         .monospace()
-                        .color(Color::hex(0xd8ecf5))
+                        .color(Color::hex(0x00d8_ecf5))
                         .selectable()
                         .id(panel.clone())
                         .padding(14.0),
@@ -63,7 +63,7 @@ pub fn code_panel(
             )
             .id(vertical.clone())
             .height(height.unwrap_or(lines as f64 * 20.0 + 28.0))
-            .background(Color::hex(0x172536))
+            .background(Color::hex(0x0017_2536))
             .corner_radius(12.0)
             .grow(Dimension::Width)
         },

@@ -54,7 +54,7 @@ fn advertise_discover_connect_and_withdraw() {
     until("discovery and IPv4 resolution", &mut browser, |e| {
         if let Event::Resolved(s) = e
             && s.id.name == actual
-            && s.addresses.iter().any(|a| a.is_ipv4())
+            && s.addresses.iter().any(std::net::SocketAddr::is_ipv4)
         {
             endpoint = Some(s);
             true

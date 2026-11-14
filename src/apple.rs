@@ -209,7 +209,7 @@ unsafe extern "C" fn address_cb(
     if address.is_null() {
         return;
     }
-    let addr = match unsafe { (*address).sa_family } as i32 {
+    let addr = match i32::from(unsafe { (*address).sa_family }) {
         libc::AF_INET => {
             let a = unsafe { &*address.cast::<libc::sockaddr_in>() };
             SocketAddr::new(
@@ -233,10 +233,10 @@ unsafe extern "C" fn address_cb(
     };
     if flags & 2 != 0 {
         if !s.addresses.contains(&addr) {
-            s.addresses.push(addr)
+            s.addresses.push(addr);
         }
     } else {
-        s.addresses.retain(|a| *a != addr)
+        s.addresses.retain(|a| *a != addr);
     }
     emit(&c.sink, Event::Resolved(s.clone()));
 }
@@ -311,13 +311,13 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                 service: None,
                 address_changed: false,
             });
-            let ptr = (&mut *ctx as *mut Context).cast();
+            let ptr = (&raw mut *ctx).cast();
             let mut root = ptr::null_mut();
             let mut addresses = ptr::null_mut();
             let code = unsafe {
                 match &ctx.request {
                     Request::Browse(_, i) => DNSServiceBrowse(
-                        &mut root,
+                        &raw mut root,
                         0,
                         *i,
                         kind.as_ptr(),
@@ -326,7 +326,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         ptr,
                     ),
                     Request::Resolve(id) => DNSServiceResolve(
-                        &mut root,
+                        &raw mut root,
                         0,
                         id.interface,
                         name.as_ptr(),
@@ -338,7 +338,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                     Request::Advertise(a) => {
                         let txt = a.txt.encode().unwrap_or_default();
                         DNSServiceRegister(
-                            &mut root,
+                            &raw mut root,
                             0,
                             a.interface,
                             name.as_ptr(),
@@ -399,14 +399,14 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                     ctx.address_changed = false;
                     if !addresses.is_null() {
                         unsafe { DNSServiceRefDeallocate(addresses) };
-                        addresses = ptr::null_mut()
+                        addresses = ptr::null_mut();
                     }
                     if let Some(s) = &ctx.service {
                         emit(&ctx.sink, Event::Resolved(s.clone()));
                         if let Ok(host) = cs(&s.hostname) {
                             let code = unsafe {
                                 DNSServiceGetAddrInfo(
-                                    &mut addresses,
+                                    &raw mut addresses,
                                     0,
                                     s.id.interface,
                                     0,
@@ -425,9 +425,9 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
             // All callbacks are synchronous in ProcessResult; close refs before freeing context.
             unsafe {
                 if !addresses.is_null() {
-                    DNSServiceRefDeallocate(addresses)
+                    DNSServiceRefDeallocate(addresses);
                 }
-                DNSServiceRefDeallocate(root)
+                DNSServiceRefDeallocate(root);
             }
         })
         .map_err(|e| Error::Unavailable(e.to_string()))?;

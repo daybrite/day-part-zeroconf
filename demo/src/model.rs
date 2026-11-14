@@ -88,7 +88,7 @@ impl Scene {
     }
     pub fn stop_browse(self) {
         if let Some(c) = self.browse_cancel.get_untracked() {
-            c.cancel()
+            c.cancel();
         }
         self.browse_cancel.set(None);
         self.generation.update(|n| *n += 1);
@@ -212,7 +212,7 @@ impl Scene {
     }
     pub fn stop_publish(self) {
         if let Some(c) = self.publish_cancel.get_untracked() {
-            c.cancel()
+            c.cancel();
         }
         self.publish_cancel.set(None);
         self.server.set(None);
@@ -265,18 +265,17 @@ impl Scene {
             }
             let port = match port {
                 Some(p) => p,
-                None => match network::Server::start(body) {
-                    Ok(server) => {
+                None => {
+                    if let Ok(server) = network::Server::start(&body) {
                         let port = server.port;
                         self.server.set(Some(Arc::new(server)));
                         port
-                    }
-                    Err(_) => {
+                    } else {
                         self.publishing.set(false);
                         self.publish_status.set(res::str::server_failed().format());
                         return;
                     }
-                },
+                }
             };
             match zc::advertise(zc::Advertisement {
                 name,
@@ -333,7 +332,7 @@ impl Scene {
         self.probe.set(res::str::connecting().format());
         day::task(async move {
             let result = day::spawn_blocking(move || network::probe(&service, http)).await;
-            let success = result.as_ref().is_ok_and(|r| r.is_ok());
+            let success = result.as_ref().is_ok_and(std::result::Result::is_ok);
             let message = match result {
                 Ok(Ok(network::Probe::Tcp(address))) => {
                     res::str::tcp_success(address.to_string()).format()
@@ -350,6 +349,10 @@ impl Scene {
         });
     }
 }
+#[cfg_attr(
+    not(target_os = "android"),
+    expect(clippy::unused_async, reason = "only the Android arm awaits")
+)]
 async fn permission() -> bool {
     #[cfg(target_os = "android")]
     {

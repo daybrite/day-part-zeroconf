@@ -35,7 +35,7 @@ impl Drop for Server {
     }
 }
 impl Server {
-    pub fn start(body: String) -> io::Result<Self> {
+    pub fn start(body: &str) -> io::Result<Self> {
         let listener = TcpListener::bind(("0.0.0.0", 0))?;
         listener.set_nonblocking(true)?;
         let port = listener.local_addr()?.port();
@@ -63,7 +63,7 @@ impl Server {
                             }
                         }
                         Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
-                            thread::sleep(Duration::from_millis(20))
+                            thread::sleep(Duration::from_millis(20));
                         }
                         Err(_) => break,
                     }
@@ -153,7 +153,7 @@ mod tests {
     }
     #[test]
     fn real_http_and_tcp_roundtrip() {
-        let server = Server::start("Synthetic test fixture".into()).unwrap();
+        let server = Server::start("Synthetic test fixture").unwrap();
         let s = Service {
             id: day_part_zeroconf::ServiceId {
                 name: "fixture".into(),
@@ -169,7 +169,7 @@ mod tests {
         assert!(matches!(probe(&s, false).unwrap(), Probe::Tcp(_)));
         match probe(&s, true).unwrap() {
             Probe::Http(s) => assert!(s.contains("Synthetic test fixture")),
-            _ => panic!("HTTP response expected"),
+            Probe::Tcp(_) => panic!("HTTP response expected"),
         }
     }
 }

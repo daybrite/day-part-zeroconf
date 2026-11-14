@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: MPL-2.0
 //! Platform NSD adapters. Binary frames preserve TXT bytes without a serialization dependency.
 use super::*;
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "passed to `map_err`, which hands the error over by value"
+)]
 fn bridge_error(e: day_bridge::Error) -> Error {
     match e {
         day_bridge::Error::Unsupported => Error::Unsupported,

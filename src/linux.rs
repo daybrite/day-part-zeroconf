@@ -88,7 +88,7 @@ unsafe extern "C" fn client_cb(client: P, state: i32, data: P) {
         emit(
             &c.sink,
             Event::Error(failure(unsafe { (c.api.avahi_client_errno)(client) })),
-        )
+        );
     }
 }
 unsafe extern "C" fn types_cb(
@@ -103,9 +103,9 @@ unsafe extern "C" fn types_cb(
 ) {
     let c = unsafe { &*data.cast::<Context>() };
     if event == BROWSER_NEW {
-        emit(&c.sink, Event::ServiceType(unsafe { s(kind) }))
+        emit(&c.sink, Event::ServiceType(unsafe { s(kind) }));
     } else if event == BROWSER_FAILURE {
-        emit(&c.sink, Event::Error(failure(-1)))
+        emit(&c.sink, Event::Error(failure(-1)));
     }
 }
 unsafe extern "C" fn browse_cb(
@@ -139,13 +139,13 @@ unsafe extern "C" fn browse_cb(
         let first = set.is_empty();
         set.insert(protocol);
         if first {
-            emit(&c.sink, Event::Found(id))
+            emit(&c.sink, Event::Found(id));
         }
     } else if let Some(set) = seen.get_mut(&id) {
         set.remove(&protocol);
         if set.is_empty() {
             seen.remove(&id);
-            emit(&c.sink, Event::Removed(id))
+            emit(&c.sink, Event::Removed(id));
         }
     }
 }
@@ -188,7 +188,7 @@ unsafe extern "C" fn resolve_cb(
                     0
                 },
             )),
-            _ => SocketAddr::new(ip, port),
+            std::net::IpAddr::V4(_) => SocketAddr::new(ip, port),
         };
         addresses.retain(|a| a.is_ipv4() != addr.is_ipv4());
         addresses.push(addr);
@@ -210,7 +210,7 @@ unsafe extern "C" fn resolve_cb(
                 addresses: addresses.clone(),
                 txt,
             }),
-        )
+        );
     }
 }
 unsafe extern "C" fn group_cb(_: P, state: i32, data: P) {
@@ -225,9 +225,9 @@ unsafe extern "C" fn group_cb(_: P, state: i32, data: P) {
                     domain: "local.".into(),
                     interface: a.interface,
                 }),
-            )
+            );
         } else if state == 3 || state == 4 {
-            emit(&c.sink, Event::Error(failure(state)))
+            emit(&c.sink, Event::Error(failure(state)));
         }
     }
 }
@@ -263,10 +263,10 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                 api: api.clone(),
                 sink,
                 request,
-                seen: Default::default(),
-                addresses: Default::default(),
+                seen: std::cell::RefCell::default(),
+                addresses: std::cell::RefCell::default(),
             });
-            let data = (&mut *ctx as *mut Context).cast();
+            let data = (&raw mut *ctx).cast();
 
             let poll = unsafe { (api.avahi_simple_poll_new)() };
             if poll.is_null() {
@@ -280,7 +280,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                     0,
                     client_cb,
                     data,
-                    &mut error,
+                    &raw mut error,
                 )
             };
             if client.is_null() {
@@ -408,7 +408,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                 }
             })();
             if let Err(e) = result {
-                emit(&ctx.sink, Event::Error(e))
+                emit(&ctx.sink, Event::Error(e));
             } else {
                 while !cancelled.load(Ordering::Acquire) {
                     if unsafe { (api.avahi_simple_poll_iterate)(poll, 100) } < 0 {
@@ -420,7 +420,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
             // Free the client and all of its child objects while callback context and libraries live.
             unsafe {
                 (api.avahi_client_free)(client);
-                (api.avahi_simple_poll_free)(poll)
+                (api.avahi_simple_poll_free)(poll);
             }
         })
         .map_err(|e| Error::Unavailable(e.to_string()))?;

@@ -7,6 +7,10 @@
 //! Accept their standard mDNS ID zero as well as the echoed legacy query ID.
 use super::*;
 use std::{io, net::UdpSocket, time::Instant};
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "passed to `map_err`, which hands the error over by value"
+)]
 fn io_error(e: io::Error) -> Error {
     if e.kind() == io::ErrorKind::PermissionDenied {
         Error::PermissionDenied
@@ -21,7 +25,7 @@ fn query(id: u16) -> Vec<u8> {
     b.extend([0, 0, 0, 1, 0, 0, 0, 0, 0, 0]);
     for label in NAME.split('.') {
         b.push(label.len() as u8);
-        b.extend(label.as_bytes())
+        b.extend(label.as_bytes());
     }
     b.extend([0, 0, 12, 0x80, 1]);
     b
@@ -41,7 +45,7 @@ fn name(b: &[u8], cursor: &mut usize) -> Option<String> {
             let low = *b.get(at + 1)?;
             if !jumped {
                 *cursor = at + 2;
-                jumped = true
+                jumped = true;
             }
             at = usize::from(n & 0x3f) * 256 + usize::from(low);
             continue;
@@ -52,7 +56,7 @@ fn name(b: &[u8], cursor: &mut usize) -> Option<String> {
         at += 1;
         if n == 0 {
             if !jumped {
-                *cursor = at
+                *cursor = at;
             }
             return Some(labels.join("."));
         }
@@ -113,7 +117,7 @@ fn types(b: &[u8], id: u16) -> Option<Vec<String>> {
             if let Ok(t) = validate_type(&target)
                 && !out.contains(&t)
             {
-                out.push(t)
+                out.push(t);
             }
         }
         at = end;
@@ -172,7 +176,7 @@ fn start_query(
                                         emit(&sink, Event::Error(Error::Overflow));
                                         return;
                                     }
-                                    emit(&sink, Event::ServiceType(t))
+                                    emit(&sink, Event::ServiceType(t));
                                 }
                             }
                         }
@@ -214,26 +218,26 @@ mod tests {
     #[test]
     fn compression_and_ptr() {
         assert_eq!(types(&response(), 123), Some(vec!["_http._tcp".into()]));
-        assert_eq!(types(&response(), 124), None)
+        assert_eq!(types(&response(), 124), None);
     }
     #[test]
     fn pointer_cycles_and_truncation() {
         let b = response();
         for end in 0..b.len() {
-            assert!(types(&b[..end], 123).is_none())
+            assert!(types(&b[..end], 123).is_none());
         }
         let mut b = response();
         let start = query(123).len();
         b[start] = 0xc0;
         b[start + 1] = start as u8;
-        assert!(types(&b, 123).is_none())
+        assert!(types(&b, 123).is_none());
     }
     #[test]
     fn ttl_zero_ignored() {
         let mut b = response();
         let start = query(123).len();
         b[start + 9] = 0;
-        assert_eq!(types(&b, 123), Some(vec![]))
+        assert_eq!(types(&b, 123), Some(vec![]));
     }
     #[test]
     fn unicast_transport_filters_packets_deduplicates_and_cancels() {

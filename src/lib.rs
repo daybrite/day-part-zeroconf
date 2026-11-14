@@ -83,6 +83,12 @@ impl TxtRecord {
             .find(|(k, _)| k.eq_ignore_ascii_case(key))
             .and_then(|(_, v)| v.as_deref())
     }
+    /// The record in DNS wire form: one length-prefixed `key` or `key=value` item per entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidInput`] for an empty, non-printable or repeated key, an item
+    /// over 255 bytes, or a record over 1300 bytes.
     pub fn encode(&self) -> Result<Vec<u8>> {
         let mut out = Vec::new();
         let mut seen = BTreeSet::new();
@@ -101,7 +107,7 @@ impl TxtRecord {
             out.extend_from_slice(key.as_bytes());
             if let Some(v) = value {
                 out.push(b'=');
-                out.extend_from_slice(v)
+                out.extend_from_slice(v);
             }
         }
         if out.len() > 1300 {
@@ -111,6 +117,11 @@ impl TxtRecord {
         }
         Ok(out)
     }
+    /// Read a record from DNS wire form, skipping items whose key is unusable or repeated.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidInput`] when an item's length runs past the end of `bytes`.
     pub fn decode(bytes: &[u8]) -> Result<Self> {
         let mut rest = bytes;
         let mut result = Self::default();
@@ -201,6 +212,13 @@ pub fn capabilities() -> Capabilities {
     backend::capabilities()
 }
 
+/// Check a DNS-SD service type such as `_http._tcp`, and return it without a trailing dot or
+/// `.local` suffix.
+///
+/// # Errors
+///
+/// Returns [`Error::InvalidInput`] when `value` is not `_name._tcp` or `_name._udp` with a name
+/// of 1 to 62 letters, digits and hyphens.
 pub fn validate_type(value: &str) -> Result<String> {
     let value = value.trim_end_matches('.');
     let value = value.strip_suffix(".local").unwrap_or(value);
@@ -238,9 +256,9 @@ impl Inbox {
         if s.events.len() >= MAX_SERVICES {
             s.events.clear();
             s.events.push_back(Event::Error(Error::Overflow));
-            s.closed = true
+            s.closed = true;
         } else {
-            s.events.push_back(event)
+            s.events.push_back(event);
         }
         let waker = s.waker.take();
         drop(s);
@@ -257,7 +275,7 @@ impl Inbox {
         if let Some(w) = waker {
             w.wake();
         }
-        self.ready.notify_all()
+        self.ready.notify_all();
     }
 }
 /// A single-consumer event subscription. Native callbacks never run application code.
@@ -281,6 +299,12 @@ impl Operation {
     pub fn next_event(&mut self) -> Next<'_> {
         Next(self)
     }
+    /// Wait up to `timeout` for the next event. `None` means none arrived or the operation
+    /// closed.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a thread panicked while holding the event queue's lock.
     pub fn recv_timeout(&mut self, timeout: Duration) -> Option<Event> {
         let s = self.inbox.state.lock().unwrap();
         let (mut s, _) = self
@@ -295,7 +319,7 @@ impl Operation {
         if let Some(t) = self.worker.take() {
             let _ = t.join();
         }
-        self.inbox.close()
+        self.inbox.close();
     }
 }
 impl Drop for Operation {
@@ -341,9 +365,14 @@ pub(crate) fn emit(sink: &Sink, event: Event) {
 }
 
 /// Browse local services, automatically resolving each observation. Keep the operation alive.
+///
+/// # Errors
+///
+/// Returns [`Error::InvalidInput`] for a malformed service type, [`Error::Unsupported`] where
+/// the platform has no DNS-SD backend, and the backend's error when it cannot start.
 pub fn browse(mut options: BrowseOptions) -> Result<Operation> {
     if let Some(t) = &options.service_type {
-        options.service_type = Some(validate_type(t)?)
+        options.service_type = Some(validate_type(t)?);
     }
     start(Request::Browse(
         options
@@ -353,6 +382,11 @@ pub fn browse(mut options: BrowseOptions) -> Result<Operation> {
     ))
 }
 /// Resolve a known local identity. Some backends emit updates; refresh to guarantee freshness.
+///
+/// # Errors
+///
+/// Returns [`Error::InvalidInput`] for a malformed identity, [`Error::Unsupported`] where the
+/// platform has no DNS-SD backend, and the backend's error when it cannot start.
 pub fn resolve(mut id: ServiceId) -> Result<Operation> {
     id.service_type = validate_type(&id.service_type)?;
     if id.name.is_empty()
@@ -367,6 +401,12 @@ pub fn resolve(mut id: ServiceId) -> Result<Operation> {
 }
 /// Advertise a listener owned by the caller. Registered reports the actual instance name.
 /// Dropping the returned operation withdraws the advertisement; it does not close the listener.
+///
+/// # Errors
+///
+/// Returns [`Error::InvalidInput`] for a malformed name, type, port or TXT record,
+/// [`Error::Unsupported`] where the platform has no DNS-SD backend, and the backend's error
+/// when it cannot start.
 pub fn advertise(mut service: Advertisement) -> Result<Operation> {
     service.service_type = validate_type(&service.service_type)?;
     if service.name.is_empty()
@@ -617,7 +657,7 @@ mod lifecycle_tests {
     fn slow_consumer_is_told_to_resync() {
         let q = inbox();
         for _ in 0..=MAX_SERVICES {
-            q.push(Event::Started)
+            q.push(Event::Started);
         }
         let s = q.state.lock().unwrap();
         assert!(s.closed);
@@ -672,7 +712,7 @@ mod lifecycle_tests {
 }
 
 /// Whether this host requires an explicit runtime permission request before discovery.
-/// Currently Android 17+ apps targeting API 37+. Request ACCESS_LOCAL_NETWORK through
+/// Currently Android 17+ apps targeting API 37+. Request `ACCESS_LOCAL_NETWORK` through
 /// day-part-permissions; Apple presents its own prompt on first native access.
 pub fn requires_explicit_permission() -> bool {
     #[cfg(any(target_os = "android", target_env = "ohos"))]

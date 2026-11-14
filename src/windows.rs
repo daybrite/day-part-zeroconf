@@ -18,7 +18,8 @@ fn hostname() -> Result<Vec<u16>> {
     let mut text = vec![0u16; 256];
     let mut len = text.len() as u32;
     // SAFETY: the native call receives a writable buffer and its length in UTF-16 units.
-    if unsafe { GetComputerNameExW(ComputerNameDnsHostname, text.as_mut_ptr(), &mut len) } == 0 {
+    if unsafe { GetComputerNameExW(ComputerNameDnsHostname, text.as_mut_ptr(), &raw mut len) } == 0
+    {
         return Err(Error::Unavailable("GetComputerNameExW".into()));
     }
     text.truncate(len as usize);
@@ -36,7 +37,7 @@ unsafe fn string(p: *const u16) -> String {
     let mut n = 0;
     unsafe {
         while n < 65536 && *p.add(n) != 0 {
-            n += 1
+            n += 1;
         }
         String::from_utf16_lossy(std::slice::from_raw_parts(p, n))
     }
@@ -71,7 +72,7 @@ unsafe extern "system" fn browse_callback(
         }
         if status == 1223 || status == 995 {
             if !records.is_null() {
-                DnsFree(records.cast(), DnsFreeRecordList)
+                DnsFree(records.cast(), DnsFreeRecordList);
             }
             c.done.store(true, Ordering::Release);
             return;
@@ -117,7 +118,7 @@ unsafe extern "system" fn browse_callback(
             }
         }
         if !records.is_null() {
-            DnsFree(records.cast(), DnsFreeRecordList)
+            DnsFree(records.cast(), DnsFreeRecordList);
         }
     }
 }
@@ -134,14 +135,14 @@ unsafe fn service(c: &Context, s: &DNS_SERVICE_INSTANCE) -> Service {
                     interface: a.interface,
                 }
             }
-            _ => unreachable!(),
+            Request::Browse(..) => unreachable!(),
         };
         let mut addresses = vec![];
         if let Some(ip) = s.ip4Address.as_ref() {
             addresses.push(SocketAddr::new(
                 Ipv4Addr::from(ip.to_ne_bytes()).into(),
                 s.wPort,
-            ))
+            ));
         }
         if let Some(ip) = s.ip6Address.as_ref() {
             let ip = Ipv6Addr::from(ip.IP6Byte);
@@ -150,7 +151,7 @@ unsafe fn service(c: &Context, s: &DNS_SERVICE_INSTANCE) -> Service {
             } else {
                 0
             };
-            addresses.push(SocketAddr::V6(SocketAddrV6::new(ip, s.wPort, 0, scope)))
+            addresses.push(SocketAddr::V6(SocketAddrV6::new(ip, s.wPort, 0, scope)));
         }
         let mut txt = TxtRecord::default();
         if !s.keys.is_null() && !s.values.is_null() {
@@ -191,7 +192,7 @@ unsafe extern "system" fn resolve_callback(
             emit(&c.sink, Event::Error(error(status)));
         }
         if !instance.is_null() {
-            DnsServiceFreeInstance(instance)
+            DnsServiceFreeInstance(instance);
         }
         c.status.store(status, Ordering::Release);
         c.done.store(true, Ordering::Release);
@@ -212,7 +213,7 @@ unsafe extern "system" fn register_callback(
             emit(&c.sink, Event::Error(error(status)));
         }
         if !instance.is_null() {
-            DnsServiceFreeInstance(instance)
+            DnsServiceFreeInstance(instance);
         }
         c.status.store(status, Ordering::Release);
         c.done.store(true, Ordering::Release);
@@ -265,7 +266,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                 registering: AtomicBool::new(true),
                 diagnostics: trace_enabled().then_some(diagnostics),
             });
-            let data = (&mut *c as *mut Context).cast();
+            let data = (&raw mut *c).cast();
             let mut cancel = DNS_SERVICE_CANCEL::default();
             match &c.request {
                 Request::Browse(kind, interface) => {
@@ -280,7 +281,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         },
                         pQueryContext: data,
                     };
-                    let code = DnsServiceBrowse(&req, &mut cancel) as u32;
+                    let code = DnsServiceBrowse(&raw const req, &raw mut cancel) as u32;
                     if code != PENDING {
                         emit(&c.sink, Event::Error(error(code)));
                         return;
@@ -291,7 +292,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         }
                         thread::sleep(Duration::from_millis(30));
                     }
-                    let code = DnsServiceBrowseCancel(&cancel);
+                    let code = DnsServiceBrowseCancel(&raw const cancel);
                     if code != 0 {
                         emit(&c.sink, Event::Error(error(code as u32)));
                     }
@@ -313,7 +314,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         pResolveCompletionCallback: Some(resolve_callback),
                         pQueryContext: data,
                     };
-                    let code = DnsServiceResolve(&req, &mut cancel) as u32;
+                    let code = DnsServiceResolve(&raw const req, &raw mut cancel) as u32;
                     if code != PENDING {
                         emit(&c.sink, Event::Error(error(code)));
                         return;
@@ -321,7 +322,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                     let mut cancelling = false;
                     while !c.done.load(Ordering::Acquire) {
                         if stopping.load(Ordering::Acquire) && !cancelling {
-                            DnsServiceResolveCancel(&cancel);
+                            DnsServiceResolveCancel(&raw const cancel);
                             cancelling = true;
                         }
                         thread::sleep(Duration::from_millis(10));
@@ -343,10 +344,10 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         .iter()
                         .map(|(_, v)| v.as_ref().map(|v| wide(std::str::from_utf8(v).unwrap())))
                         .collect();
-                    let kp: Vec<_> = keys.iter().map(|k| k.as_ptr()).collect();
+                    let kp: Vec<_> = keys.iter().map(Vec::as_ptr).collect();
                     let vp: Vec<_> = values
                         .iter()
-                        .map(|v| v.as_ref().map_or(ptr::null(), |v| v.as_ptr()))
+                        .map(|v| v.as_ref().map_or(ptr::null(), Vec::as_ptr))
                         .collect();
                     let instance = DnsServiceConstructInstance(
                         name.as_ptr(),
@@ -375,7 +376,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         pQueryContext: data,
                         ..Default::default()
                     };
-                    let code = DnsServiceRegister(&req, &mut cancel);
+                    let code = DnsServiceRegister(&raw const req, &raw mut cancel);
                     if code != PENDING {
                         DnsServiceFreeInstance(instance);
                         emit(&c.sink, Event::Error(error(code)));
@@ -384,7 +385,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                     let mut cancelling = false;
                     while !c.done.load(Ordering::Acquire) {
                         if stopping.load(Ordering::Acquire) && !cancelling {
-                            DnsServiceRegisterCancel(&cancel);
+                            DnsServiceRegisterCancel(&raw const cancel);
                             cancelling = true;
                         }
                         thread::sleep(Duration::from_millis(10));
@@ -395,7 +396,7 @@ pub fn start(request: Request, sink: Sink) -> Result<Box<dyn Native>> {
                         }
                         c.registering.store(false, Ordering::Release);
                         c.done.store(false, Ordering::Release);
-                        let code = DnsServiceDeRegister(&req, &mut cancel);
+                        let code = DnsServiceDeRegister(&raw const req, &raw mut cancel);
                         if code == PENDING {
                             while !c.done.load(Ordering::Acquire) {
                                 thread::sleep(Duration::from_millis(10));

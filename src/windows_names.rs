@@ -11,9 +11,9 @@ fn unescape(s: &str) -> String {
     while i < bytes.len() {
         if bytes[i] == b'\\' && i + 1 < bytes.len() {
             if i + 3 < bytes.len() && bytes[i + 1..i + 4].iter().all(u8::is_ascii_digit) {
-                let n = (bytes[i + 1] - b'0') as u16 * 100
-                    + (bytes[i + 2] - b'0') as u16 * 10
-                    + (bytes[i + 3] - b'0') as u16;
+                let n = u16::from(bytes[i + 1] - b'0') * 100
+                    + u16::from(bytes[i + 2] - b'0') * 10
+                    + u16::from(bytes[i + 3] - b'0');
                 if n <= 255 {
                     out.push(n as u8);
                     i += 4;
