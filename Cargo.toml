@@ -2,7 +2,7 @@
 name = "day-part-zeroconf"
 version = "0.1.1"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.100"
 description = "Native DNS-SD discovery and advertisement for Day apps"
 repository = "https://github.com/daybrite/day-part-zeroconf"
 license = "MPL-2.0"

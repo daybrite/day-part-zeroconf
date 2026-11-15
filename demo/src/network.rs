@@ -143,6 +143,7 @@ pub(crate) fn probe(service: &Service, http: bool) -> io::Result<Probe> {
 }
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
     use super::*;
     #[test]
     fn txt_editor_preserves_flags() {
@@ -166,7 +167,7 @@ mod tests {
             addresses: vec![SocketAddr::from(([127, 0, 0, 1], server.port))],
             txt: TxtRecord::default(),
         };
-        assert!(matches!(probe(&s, false).unwrap(), Probe::Tcp(_)));
+        assert_matches!(probe(&s, false).unwrap(), Probe::Tcp(_));
         match probe(&s, true).unwrap() {
             Probe::Http(s) => assert!(s.contains("Synthetic test fixture")),
             Probe::Tcp(_) => panic!("HTTP response expected"),
