@@ -53,6 +53,8 @@ name = "dayapp"
 day = { package = "day-app", version = "0.*" }
 day-piece-settings = "0.*"
 day-part-zeroconf = { version = "0.*", path = ".." }
+
+[target.'cfg(target_os = "android")'.dependencies]
 day-part-permissions = "0.*"
 
 [build-dependencies]
