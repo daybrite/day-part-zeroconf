@@ -143,8 +143,8 @@ pub(crate) fn probe(service: &Service, http: bool) -> io::Result<Probe> {
 }
 #[cfg(test)]
 mod tests {
-    use std::assert_matches;
     use super::*;
+    use std::assert_matches;
     #[test]
     fn txt_editor_preserves_flags() {
         let t = parse_txt("flag\nempty=\npath=/opds").unwrap();
